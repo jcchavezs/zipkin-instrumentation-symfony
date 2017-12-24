@@ -1,2 +1,3 @@
-# zipkin-symfony
+# Zipkin Symfony
+
 A Zipkin integration for Symfony applications

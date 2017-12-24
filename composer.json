@@ -1,0 +1,32 @@
+{
+    "name": "jcchavezs/zipkin-symfony",
+    "description": "A Zipkin integration for Symfony applications",
+    "type": "library",
+    "require": {
+        "symfony/http-kernel": "~2.7|~3.0",
+        "symfony/config": "~2.7|~3.0",
+        "symfony/dependency-injection": "~2.7|~3.0",
+        "jcchavezs/zipkin": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~5.7.19"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "José Carlos Chávez",
+            "email": "jcchavezs@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {"ZipkinBundle\\": "./src/ZipkinBundle/"}
+    },
+    "autoload-dev": {
+        "psr-4": {"ZipkinBundleTests\\": "./tests/"}
+    },
+    "scripts": {
+        "test": "./vendor/bin/phpunit tests",
+        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* ./",
+        "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* ./"
+    }
+}
