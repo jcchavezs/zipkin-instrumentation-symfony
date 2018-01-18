@@ -39,8 +39,8 @@ built based on the configuration (add this to `app/config/config.yml`):
 
 ```yaml
 zipkin:
-  noop: false // if set to false, no request will be traced
-  service_name: my_service // the name of the service
+  noop: false # if set to false, no request will be traced
+  service_name: my_service # the name of the service
   sampler:
     type: percentage
     percentage: 0.1
