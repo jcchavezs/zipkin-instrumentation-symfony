@@ -20,20 +20,15 @@ class TracingFactory
      */
     public function build(ContainerInterface $container)
     {
-        $isNoop = $container->getParameter('zipkin.noop');
+        $isNoop = (bool) $container->getParameter('zipkin.noop');
 
-        $tracingBuilder =
-            TracingBuilder::create()
+        return TracingBuilder::create()
                 ->havingLocalServiceName(self::buildServiceName($container))
                 ->havingSampler(self::buildSampler($container))
                 ->havingReporter(self::buildReporter($container))
-                ->havingLocalEndpoint(self::buildEndpoint($container));
-
-        if ($isNoop) {
-            $tracingBuilder->beingNoop();
-        }
-
-        return $tracingBuilder->build();
+                ->havingLocalEndpoint(self::buildEndpoint($container))
+                ->beingNoop($isNoop)
+                ->build();
     }
 
     /**
@@ -91,7 +86,9 @@ class TracingFactory
                 return $container->get('zipkin.sampler.route');
                 break;
             case 'percentage':
-                return PercentageSampler::create((float) $container->getParameter('zipkin.sampler.percentage.rate'));
+                return PercentageSampler::create(
+                    (float) $container->getParameter('zipkin.sampler.percentage.rate')
+                );
                 break;
             default:
                 return BinarySampler::createAsAlwaysSample();

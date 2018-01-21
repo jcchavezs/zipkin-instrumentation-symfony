@@ -17,6 +17,7 @@ final class PathSamplerTest extends PHPUnit_Framework_TestCase
         $request = new Request([], [], [], [], [], ['REQUEST_URI' => self::TEST_PATH]);
         $requestStack = new RequestStack();
         $requestStack->push($request);
+
         $sampler = new PathSampler($requestStack, [self::TEST_PATH_REGEX]);
         $this->assertTrue($sampler->isSampled(1));
     }
@@ -26,6 +27,7 @@ final class PathSamplerTest extends PHPUnit_Framework_TestCase
         $request = new Request([], [], [], [], [], ['REQUEST_URI' => self::TEST_PATH]);
         $requestStack = new RequestStack();
         $requestStack->push($request);
+
         $sampler = new PathSampler($requestStack, [], [self::TEST_PATH_REGEX]);
         $this->assertFalse($sampler->isSampled(1));
     }

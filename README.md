@@ -28,6 +28,7 @@ services:
     class: ZipkinBundle\Middleware\TracingMiddleware
     arguments:
       - "@event_dispatcher"
+      - "@router"
       - "@zipkin.default_tracing"
       - "@logger"
     tags:
@@ -129,6 +130,7 @@ services:
     class: ZipkinBundle\Middleware\TracingMiddleware
     arguments:
       - "@event_dispatcher"
+      - "@router"
       - "@my_own_tracer"
       - "@logger"
     tags:

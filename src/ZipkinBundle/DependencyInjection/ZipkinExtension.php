@@ -2,8 +2,6 @@
 
 namespace ZipkinBundle\DependencyInjection;
 
-use ZipkinBundle\Transports\HttpFactory;
-use Exception;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
