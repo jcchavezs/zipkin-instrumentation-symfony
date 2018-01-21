@@ -9,17 +9,14 @@ use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Routing\Router;
 use Zipkin\Kind;
-use Zipkin\Propagation\DefaultSamplingFlags;
 use Zipkin\Propagation\Map;
-use Zipkin\Propagation\Propagation;
 use Zipkin\Propagation\SamplingFlags;
 use Zipkin\Propagation\TraceContext;
-use Zipkin\Span;
 use Zipkin\Tags;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
-use ZipkinBundle\Controllers\TraceableController;
 
 final class TracingMiddleware
 {
@@ -43,12 +40,19 @@ final class TracingMiddleware
      */
     private $scopeCloser;
 
+    /**
+     * @var Router
+     */
+    private $router;
+
     public function __construct(
         EventDispatcherInterface $dispatcher,
+        Router $router,
         Tracing $tracing,
         LoggerInterface $logger
     ) {
         $this->dispatcher = $dispatcher;
+        $this->router = $router;
         $this->tracing = $tracing;
         $this->logger = $logger;
     }
@@ -62,25 +66,26 @@ final class TracingMiddleware
 
     private function startTracingForMasterRequest(FilterControllerEvent $event)
     {
-        $controllerAction = $event->getRequest()->attributes->get('_controller');
-        $actionName = substr($controllerAction, strpos($controllerAction, '::') + 2, -6);
-        $controller = $event->getController();
+        $routeName = $event->getRequest()->attributes->get('_route');
 
-        $name = $actionName;
-        if ($controller instanceof TraceableController) {
-            $name = $controller->operationName($actionName);
+        $name = $event->getRequest()->getMethod();
+        if ($routeName) {
+            $route = $this->router->getRouteCollection()->get($routeName);
+            $name = $route->getPath();
         }
 
         $spanContext = $this->extractContextFromRequest($event->getRequest());
 
         $span = $this->tracing->getTracer()->nextSpan($spanContext);
-
         $span->setName($name);
         $span->setKind(Kind\SERVER);
         $span->start();
         $span->tag(Tags\HTTP_METHOD, $event->getRequest()->getMethod());
         $span->tag(Tags\HTTP_PATH, $event->getRequest()->getRequestUri());
-        $span->tag('symfony.route', $event->getRequest()->get('_route'));
+
+        if ($routeName) {
+            $span->tag('symfony.route', $routeName);
+        }
 
         $this->scopeCloser = $this->tracing->getTracer()->openScope($span);
 
@@ -110,6 +115,7 @@ final class TracingMiddleware
         if ($span !== null) {
             $span->tag(Tags\HTTP_STATUS_CODE, $event->getResponse()->getStatusCode());
             $span->finish();
+            ($this->scopeCloser)();
         }
 
         $this->flushTracer();
@@ -143,12 +149,20 @@ final class TracingMiddleware
     {
         $middleware = $this;
 
-        $this->dispatcher->addListener('kernel.terminate', function (PostResponseEvent $event) use ($middleware) {
-            $middleware->onKernelTerminate($event);
-        }, 100);
+        $this->dispatcher->addListener(
+            'kernel.terminate',
+            function (PostResponseEvent $event) use (&$middleware) {
+                $middleware->onKernelTerminate($event);
+            },
+            100
+        );
 
-        $this->dispatcher->addListener('kernel.exception', function (GetResponseForExceptionEvent $event) use ($middleware) {
-            $middleware->onKernelException($event);
-        }, 100);
+        $this->dispatcher->addListener(
+            'kernel.exception',
+            function (GetResponseForExceptionEvent $event) use (&$middleware) {
+                $middleware->onKernelException($event);
+            },
+            100
+        );
     }
 }

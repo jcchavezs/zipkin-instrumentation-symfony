@@ -8,8 +8,19 @@ use Zipkin\Sampler;
 
 final class PathSampler implements Sampler
 {
+    /**
+     * @var RequestStack
+     */
     private $requestStack;
+
+    /**
+     * @var array
+     */
     private $includedPaths;
+
+    /**
+     * @var array
+     */
     private $excludedPaths;
 
     public function __construct(RequestStack $requestStack, array $includedPaths = [], array $excludedPaths = [])
@@ -22,7 +33,7 @@ final class PathSampler implements Sampler
     /**
      * @param int $traceId
      * @return bool
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function isSampled($traceId)
     {
