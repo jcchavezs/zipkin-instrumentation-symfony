@@ -9,7 +9,7 @@ use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Routing\Router;
+use Symfony\Component\Routing\RouterInterface;
 use Zipkin\Kind;
 use Zipkin\Propagation\Map;
 use Zipkin\Propagation\SamplingFlags;
@@ -41,13 +41,13 @@ final class TracingMiddleware
     private $scopeCloser;
 
     /**
-     * @var Router
+     * @var RouterInterface
      */
     private $router;
 
     public function __construct(
         EventDispatcherInterface $dispatcher,
-        Router $router,
+        RouterInterface $router,
         Tracing $tracing,
         LoggerInterface $logger
     ) {
@@ -77,9 +77,9 @@ final class TracingMiddleware
         $spanContext = $this->extractContextFromRequest($event->getRequest());
 
         $span = $this->tracing->getTracer()->nextSpan($spanContext);
+        $span->start();
         $span->setName($name);
         $span->setKind(Kind\SERVER);
-        $span->start();
         $span->tag(Tags\HTTP_METHOD, $event->getRequest()->getMethod());
         $span->tag(Tags\HTTP_PATH, $event->getRequest()->getRequestUri());
 

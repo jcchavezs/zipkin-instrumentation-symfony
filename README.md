@@ -18,7 +18,7 @@ composer require jcchavezs/zipkin-symfony
 ## Getting started
 
 This Symfony bundle provides a middleware that can be used to trace
-HTTP requests. In order to use it it is important that you declare 
+HTTP requests. In order to use it, it is important that you declare 
 the middleware by adding this to `app/config/services.yml` or any other
 [dependency injection](https://symfony.com/doc/current/components/dependency_injection.html) declaration.
 
@@ -49,7 +49,11 @@ zipkin:
 
 ## Samplers
 
-Besides `always`, and `never` there are other three sampling strategies:
+Besides `always`, and `never` there are three other sampling strategies: **by path**, **by route** and 
+**by percentage**, however it is also possible yo use your own sampler.
+
+It is important to mention that the sampling decision is made on two situations: a) when a new trace
+is being started, b) when the extracted context does not include a sampling decision.
 
 ### By path
 
@@ -77,7 +81,7 @@ symfony route:
 zipkin:
   ...
   sampler:
-    type: path
+    type: route
     path:
       included_paths:
         - "my_route"
@@ -122,7 +126,7 @@ zipkin:
 
 Although this bundle provides a tracer based on the configuration parameters
 under the `zipkin` node, you can inject your own `tracing component` to the 
-middelware as long as it implements the `Zipkin\Tracing` interface:
+middleware as long as it implements the `Zipkin\Tracing` interface:
 
 ```yaml
 services:
@@ -139,4 +143,4 @@ services:
 
 ## Contributing
 
-All contribution and feedback is welcome.
+All contribution and feedback are welcome.

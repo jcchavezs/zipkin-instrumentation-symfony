@@ -10,13 +10,14 @@ use Zipkin\Reporters\Http;
 use Zipkin\Reporters\Log;
 use Zipkin\Sampler;
 use Zipkin\Samplers\BinarySampler;
+use Zipkin\Tracing;
 use Zipkin\TracingBuilder;
 
 class TracingFactory
 {
     /**
      * @param ContainerInterface $container
-     * @return \Zipkin\DefaultTracing
+     * @return Tracing
      */
     public function build(ContainerInterface $container)
     {
@@ -68,7 +69,7 @@ class TracingFactory
     }
 
     /**
-     * @param $container
+     * @param ContainerInterface $container
      * @return Sampler
      */
     private static function buildSampler(ContainerInterface $container)
