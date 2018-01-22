@@ -8,6 +8,7 @@ use Zipkin\PercentageSampler;
 use Zipkin\Reporter;
 use Zipkin\Reporters\Http;
 use Zipkin\Reporters\Log;
+use Zipkin\Reporters\Noop;
 use Zipkin\Sampler;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Tracing;
@@ -52,6 +53,8 @@ class TracingFactory
 
         switch ($reporterName) {
             default:
+                return new Noop();
+            case 'noop':
                 return new Log($logger);
                 break;
             case 'http':
