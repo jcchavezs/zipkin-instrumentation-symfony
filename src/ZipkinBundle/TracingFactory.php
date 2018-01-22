@@ -14,13 +14,13 @@ use Zipkin\Samplers\BinarySampler;
 use Zipkin\Tracing;
 use Zipkin\TracingBuilder;
 
-class TracingFactory
+final class TracingFactory
 {
     /**
      * @param ContainerInterface $container
      * @return Tracing
      */
-    public function build(ContainerInterface $container)
+    public static function build(ContainerInterface $container)
     {
         $isNoop = (bool) $container->getParameter('zipkin.noop');
 
