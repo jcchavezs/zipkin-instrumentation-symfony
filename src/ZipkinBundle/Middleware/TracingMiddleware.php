@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle\Middleware;
 
+use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
@@ -59,8 +60,16 @@ final class TracingMiddleware
 
     public function onKernelController(FilterControllerEvent $event)
     {
-        if ($event->getRequestType() === HttpKernelInterface::MASTER_REQUEST) {
+        if ($event->getRequestType() !== HttpKernelInterface::MASTER_REQUEST) {
+            return;
+        }
+
+        try {
             $this->startTracingForMasterRequest($event);
+        } catch (Exception $e) {
+            $this->logger->error(
+                sprintf('Error when starting the span: %s', $e->getMessage())
+            );
         }
     }
 
@@ -92,22 +101,6 @@ final class TracingMiddleware
         $this->subscribeToFinishEvent();
     }
 
-    /**
-     * @param Request $request
-     * @return TraceContext|SamplingFlags|null
-     */
-    private function extractContextFromRequest(Request $request)
-    {
-        $extractor = $this->tracing->getPropagation()->getExtractor(new Map());
-
-        return $extractor(array_map(
-            function ($values) {
-                return $values[0];
-            },
-            $request->headers->all()
-        ));
-    }
-
     public function onKernelTerminate(PostResponseEvent $event)
     {
         $span = $this->tracing->getTracer()->getCurrentSpan();
@@ -132,6 +125,22 @@ final class TracingMiddleware
         }
 
         $this->flushTracer();
+    }
+
+    /**
+     * @param Request $request
+     * @return TraceContext|SamplingFlags|null
+     */
+    private function extractContextFromRequest(Request $request)
+    {
+        $extractor = $this->tracing->getPropagation()->getExtractor(new Map());
+
+        return $extractor(array_map(
+            function ($values) {
+                return $values[0];
+            },
+            $request->headers->all()
+        ));
     }
 
     private function flushTracer()
