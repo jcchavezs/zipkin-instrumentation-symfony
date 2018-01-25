@@ -1,7 +1,7 @@
 {
     "name": "jcchavezs/zipkin-symfony",
     "description": "A Zipkin integration for Symfony applications",
-    "type": "library",
+    "type": "symfony-bundle",
     "require": {
         "symfony/config": "~2.7|~3.0",
         "symfony/http-kernel": "~2.7|~3.0",

@@ -25,14 +25,14 @@ the middleware by adding this to `app/config/services.yml` or any other
 ```yaml
 services:
   tracing_middleware:
-    class: ZipkinBundle\Middleware\TracingMiddleware
+    class: ZipkinBundle\Middleware
     arguments:
-      - "@event_dispatcher"
-      - "@router"
       - "@zipkin.default_tracing"
       - "@logger"
     tags:
       - { name: kernel.event_listener, event: kernel.controller }
+      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.exception }
 ```
 
 `@zipkin.default_tracing` is a `Zipkin\DefaultTracing` instance which is being 
@@ -131,14 +131,14 @@ middleware as long as it implements the `Zipkin\Tracing` interface:
 ```yaml
 services:
   tracing_middleware:
-    class: ZipkinBundle\Middleware\TracingMiddleware
+    class: ZipkinBundle\Middleware
     arguments:
-      - "@event_dispatcher"
-      - "@router"
       - "@my_own_tracer"
       - "@logger"
     tags:
       - { name: kernel.event_listener, event: kernel.controller }
+      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.exception }
 ```
 
 ## Contributing
