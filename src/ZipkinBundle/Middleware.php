@@ -6,6 +6,7 @@ use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
+use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
 use Zipkin\Kind;
@@ -41,7 +42,7 @@ final class Middleware
         $this->logger = $logger;
     }
 
-    public function onKernelController(FilterControllerEvent $event)
+    public function onKernelRequest(GetResponseEvent $event)
     {
         if (!$event->isMasterRequest()) {
             return;
@@ -64,11 +65,6 @@ final class Middleware
         $span->tag(Tags\HTTP_METHOD, $request->getMethod());
         $span->tag(Tags\HTTP_PATH, $request->getRequestUri());
 
-        $routeName = $request->attributes->get('_route');
-        if ($routeName) {
-            $span->tag('symfony.route', $routeName);
-        }
-
         $this->scopeCloser = $this->tracing->getTracer()->openScope($span);
     }
 
@@ -84,6 +80,12 @@ final class Middleware
     public function onKernelTerminate(PostResponseEvent $event)
     {
         $span = $this->tracing->getTracer()->getCurrentSpan();
+        $request = $event->getRequest();
+
+        $routeName = $request->attributes->get('_route');
+        if ($routeName) {
+            $span->tag('symfony.route', $routeName);
+        }
 
         if ($span !== null) {
             $span->tag(Tags\HTTP_STATUS_CODE, $event->getResponse()->getStatusCode());
