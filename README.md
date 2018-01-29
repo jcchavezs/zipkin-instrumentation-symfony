@@ -141,6 +141,42 @@ services:
       - { name: kernel.event_listener, event: kernel.exception }
 ```
 
+## Span naming
+
+By default the span name is being defined by the HTTP verb. This approach is
+a not so bad option seeking for low cardinality in span naming. A more useful
+approach is to use the route path: `/user/{user_id}` however including the 
+`@router` in the middleware is an expensive operation thus the best is to 
+precompile a map of `name => path` in cache that can be used to resolve the 
+path in runtime.
+
+```yaml
+  zipkin.span_naming.route:
+    class: ZipkinBundle\SpanNaming\Route\Naming
+    factory [ZipkinBundle\SpanNaming\Route\Naming, 'create']
+    arguments:
+      - "%kernel.cache_dir%"
+
+  zipkin.span_naming.cache_warmer:
+    class: ZipkinBundle\SpanNaming\Route\CacheWarmer
+    arguments:
+      - "@router"
+    tags:
+      - { name: kernel.cache_warmer, priority: 0 }
+
+services:
+  tracing_middleware:
+    class: ZipkinBundle\Middleware
+    arguments:
+      - "@zipkin.default_tracing"
+      - "@logger"
+      - "@zipkin.span_naming.route"
+    tags:
+      - { name: kernel.event_listener, event: kernel.controller }
+      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.exception }
+```
+
 ## Contributing
 
 All contribution and feedback are welcome.

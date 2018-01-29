@@ -16,6 +16,8 @@ use Zipkin\Propagation\TraceContext;
 use Zipkin\Tags;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
+use ZipkinBundle\SpanNaming\DefaultNaming;
+use ZipkinBundle\SpanNaming\SpanNamingInterface;
 
 final class Middleware
 {
@@ -34,12 +36,19 @@ final class Middleware
      */
     private $scopeCloser;
 
+    /**
+     * @var SpanNamingInterface
+     */
+    private $spanNaming;
+
     public function __construct(
         Tracing $tracing,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        SpanNamingInterface $spanNamer = null
     ) {
         $this->tracing = $tracing;
         $this->logger = $logger;
+        $this->spanNaming = $spanNamer ?: DefaultNaming::create();
     }
 
     public function onKernelRequest(GetResponseEvent $event)
@@ -60,7 +69,7 @@ final class Middleware
 
         $span = $this->tracing->getTracer()->nextSpan($spanContext);
         $span->start();
-        $span->setName($request->getMethod());
+        $span->setName($this->spanNaming->getName($request));
         $span->setKind(Kind\SERVER);
         $span->tag(Tags\HTTP_HOST, $request->getHost());
         $span->tag(Tags\HTTP_METHOD, $request->getMethod());
