@@ -62,8 +62,9 @@ final class Middleware
         $span->start();
         $span->setName($request->getMethod());
         $span->setKind(Kind\SERVER);
+        $span->tag(Tags\HTTP_HOST, $request->getHost());
         $span->tag(Tags\HTTP_METHOD, $request->getMethod());
-        $span->tag(Tags\HTTP_PATH, $request->getRequestUri());
+        $span->tag(Tags\HTTP_PATH, $request->getPathInfo());
 
         $this->scopeCloser = $this->tracing->getTracer()->openScope($span);
     }
@@ -90,7 +91,7 @@ final class Middleware
         if ($span !== null) {
             $span->tag(Tags\HTTP_STATUS_CODE, $event->getResponse()->getStatusCode());
             $span->finish();
-            ($this->scopeCloser)();
+            call_user_func($this->scopeCloser);
         }
 
         $this->flushTracer();

@@ -30,7 +30,7 @@ services:
       - "@zipkin.default_tracing"
       - "@logger"
     tags:
-      - { name: kernel.event_listener, event: kernel.request }
+      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
       - { name: kernel.event_listener, event: kernel.terminate }
       - { name: kernel.event_listener, event: kernel.exception }
 ```
@@ -136,7 +136,7 @@ services:
       - "@my_own_tracer"
       - "@logger"
     tags:
-      - { name: kernel.event_listener, event: kernel.request }
+      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
       - { name: kernel.event_listener, event: kernel.terminate }
       - { name: kernel.event_listener, event: kernel.exception }
 ```
