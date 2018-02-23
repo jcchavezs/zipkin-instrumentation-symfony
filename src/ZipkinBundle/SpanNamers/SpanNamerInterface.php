@@ -1,10 +1,10 @@
 <?php
 
-namespace ZipkinBundle\SpanNaming;
+namespace ZipkinBundle\SpanNamers;
 
 use Symfony\Component\HttpFoundation\Request;
 
-interface SpanNamingInterface
+interface SpanNamerInterface
 {
     /**
      * @param Request $request

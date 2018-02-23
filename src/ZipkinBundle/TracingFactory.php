@@ -58,7 +58,7 @@ final class TracingFactory
                 return new Log($logger);
                 break;
             case 'http':
-                return new Http(null, $logger, $container->getParameter('zipkin.reporter.http'));
+                return new Http(null, $container->getParameter('zipkin.reporter.http'));
         }
     }
 

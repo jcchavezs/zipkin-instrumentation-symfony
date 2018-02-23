@@ -1,13 +1,13 @@
 <?php
 
-namespace ZipkinBundle\Tests\Unit\SpanNaming\Route;
+namespace ZipkinBundle\Tests\Unit\SpanNamers\Route;
 
 use PHPUnit_Framework_TestCase;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\Routing\Router;
-use ZipkinBundle\SpanNaming\Route\CacheWarmer;
+use ZipkinBundle\SpanNamers\Route\CacheWarmer;
 
 final class CacheWarmerTest extends PHPUnit_Framework_TestCase
 {

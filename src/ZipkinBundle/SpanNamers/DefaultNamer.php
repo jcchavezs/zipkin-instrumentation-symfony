@@ -1,10 +1,10 @@
 <?php
 
-namespace ZipkinBundle\SpanNaming;
+namespace ZipkinBundle\SpanNamers;
 
 use Symfony\Component\HttpFoundation\Request;
 
-final class DefaultNaming implements SpanNamingInterface
+final class DefaultNamer implements SpanNamerInterface
 {
     public static function create()
     {

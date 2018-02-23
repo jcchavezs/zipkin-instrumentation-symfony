@@ -1,12 +1,14 @@
 <?php
 
-namespace ZipkinBundle\SpanNaming\Route;
+namespace ZipkinBundle\SpanNamers\Route;
 
 use Symfony\Component\HttpFoundation\Request;
-use ZipkinBundle\SpanNaming\SpanNamingInterface;
+use ZipkinBundle\SpanNamers\SpanNamerInterface;
 
-final class Naming implements SpanNamingInterface
+final class SpanNamer implements SpanNamerInterface
 {
+    const NOT_FOUND = 'not_found';
+
     /**
      * @var array
      */
@@ -28,12 +30,17 @@ final class Naming implements SpanNamingInterface
      */
     public function getName(Request $request)
     {
-        $routeName = $request->request->get('_route');
+        $method = $request->getMethod();
+        $routeName = $request->attributes->get('_route');
 
-        if (array_key_exists($routeName, $this->routes)) {
-            return $request->getMethod() . ' ' . $this->routes[$routeName];
+        if ($routeName === null) {
+            return $method . ' ' . self::NOT_FOUND;
         }
 
-        return $request->getMethod();
+        if (array_key_exists($routeName, $this->routes)) {
+            return $method . ' ' . $this->routes[$routeName];
+        }
+
+        return $method;
     }
 }
