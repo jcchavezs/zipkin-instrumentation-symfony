@@ -49,13 +49,14 @@ final class TracingFactory
     private static function buildReporter(ContainerInterface $container)
     {
         $reporterName = $container->getParameter('zipkin.reporter.type');
-        $logger = $container->get('logger');
 
         switch ($reporterName) {
             default:
-                return new Noop();
-            case 'noop':
+            case 'log':
+                $logger = $container->get('logger');
                 return new Log($logger);
+            case 'noop':
+                return new Noop();
                 break;
             case 'http':
                 return new Http(null, $container->getParameter('zipkin.reporter.http'));

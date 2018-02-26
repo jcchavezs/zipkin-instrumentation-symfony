@@ -109,6 +109,8 @@ Check the [Custom Tracing](#custom-tracing) section for more details.
 
 ## Reporters
 
+By default, the bundle reports to `Log` reporter which wraps `@logger`.
+
 ### HTTP reporter
 
 This is the most common use case, it reports to a HTTP backend of Zipkin
@@ -144,11 +146,11 @@ services:
 ## Span namers
 
 By default the span name is being defined by the HTTP verb. This approach is
-a not so bad option seeking for low cardinality in span namer. A more useful
+a not so bad option seeking for low cardinality in span naming. A more useful
 approach is to use the route path: `/user/{user_id}` however including the 
-`@router` in the middleware is an expensive operation thus the best is to 
-precompile a map of `name => path` in cache that can be used to resolve the 
-path in runtime.
+`@router` in the middleware is expensive and reduces its performance thus the
+best is to precompile (aka cache warmup) a map of `name => path` in cache that
+can be used to resolve the path in runtime.
 
 ```yaml
   zipkin.span_namer.route:

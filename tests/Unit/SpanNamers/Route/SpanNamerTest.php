@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\Request;
 use ZipkinBundle\SpanNamers\Route\CacheWarmer;
 use ZipkinBundle\SpanNamers\Route\SpanNamer;
 
-final class NamingTest extends PHPUnit_Framework_TestCase
+final class SpanNamerTest extends PHPUnit_Framework_TestCase
 {
     const ROUTE_NAME = 'route';
     const ROUTE_PATH = '/path';
