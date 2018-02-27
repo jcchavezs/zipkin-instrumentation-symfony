@@ -153,6 +153,7 @@ best is to precompile (aka cache warmup) a map of `name => path` in cache that
 can be used to resolve the path in runtime.
 
 ```yaml
+services:
   zipkin.span_namer.route:
     class: ZipkinBundle\SpanNamers\Route\SpanNamer
     factory: [ZipkinBundle\SpanNamers\Route\SpanNamer, 'create']
@@ -166,7 +167,6 @@ can be used to resolve the path in runtime.
     tags:
       - { name: kernel.cache_warmer, priority: 0 }
 
-services:
   tracing_middleware:
     class: ZipkinBundle\Middleware
     arguments:
