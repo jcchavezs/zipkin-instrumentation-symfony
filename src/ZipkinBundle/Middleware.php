@@ -16,6 +16,8 @@ use Zipkin\Propagation\TraceContext;
 use Zipkin\Tags;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
+use ZipkinBundle\SpanNamers\DefaultNamer;
+use ZipkinBundle\SpanNamers\SpanNamerInterface;
 
 final class Middleware
 {
@@ -34,12 +36,19 @@ final class Middleware
      */
     private $scopeCloser;
 
+    /**
+     * @var SpanNamerInterface
+     */
+    private $spanNamer;
+
     public function __construct(
         Tracing $tracing,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        SpanNamerInterface $spanNamer = null
     ) {
         $this->tracing = $tracing;
         $this->logger = $logger;
+        $this->spanNamer = $spanNamer ?: DefaultNamer::create();
     }
 
     public function onKernelRequest(GetResponseEvent $event)
@@ -60,7 +69,6 @@ final class Middleware
 
         $span = $this->tracing->getTracer()->nextSpan($spanContext);
         $span->start();
-        $span->setName($request->getMethod());
         $span->setKind(Kind\SERVER);
         $span->tag(Tags\HTTP_HOST, $request->getHost());
         $span->tag(Tags\HTTP_METHOD, $request->getMethod());
@@ -81,14 +89,16 @@ final class Middleware
     public function onKernelTerminate(PostResponseEvent $event)
     {
         $span = $this->tracing->getTracer()->getCurrentSpan();
-        $request = $event->getRequest();
-
-        $routeName = $request->attributes->get('_route');
-        if ($routeName) {
-            $span->tag('symfony.route', $routeName);
-        }
 
         if ($span !== null) {
+            $request = $event->getRequest();
+
+            $routeName = $request->attributes->get('_route');
+            if ($routeName) {
+                $span->tag('symfony.route', $routeName);
+            }
+
+            $span->setName($this->spanNamer->getName($request));
             $span->tag(Tags\HTTP_STATUS_CODE, $event->getResponse()->getStatusCode());
             $span->finish();
             call_user_func($this->scopeCloser);

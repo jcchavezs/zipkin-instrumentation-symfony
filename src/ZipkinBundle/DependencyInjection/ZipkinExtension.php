@@ -52,7 +52,6 @@ final class ZipkinExtension extends Extension
             $config['sampler']['path']['included_paths']
         );
 
-
         $container->setParameter(
             'zipkin.sampler.path.excluded_paths',
             $config['sampler']['path']['excluded_paths']
