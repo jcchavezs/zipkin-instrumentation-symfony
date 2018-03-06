@@ -27,7 +27,9 @@
         }
     },
     "autoload-dev": {
-        "psr-4": {"ZipkinBundle\\Tests\\": "./tests/"}
+        "psr-4": {
+            "ZipkinBundle\\Tests\\": "./tests/"
+        }
     },
     "scripts": {
         "test": "./vendor/bin/phpunit tests",

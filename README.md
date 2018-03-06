@@ -135,7 +135,7 @@ services:
   tracing_middleware:
     class: ZipkinBundle\Middleware
     arguments:
-      - "@my_own_tracer"
+      - "@my_own_tracing"
       - "@logger"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 256 }
@@ -149,7 +149,7 @@ By default the span name is being defined by the HTTP verb. This approach is
 a not so bad option seeking for low cardinality in span naming. A more useful
 approach is to use the route path: `/user/{user_id}` however including the 
 `@router` in the middleware is expensive and reduces its performance thus the
-best is to precompile (aka cache warmup) a map of `name => path` in cache that
+best is to precompile (aka cache warm up) a map of `name => path` in cache that
 can be used to resolve the path in runtime.
 
 ```yaml
@@ -160,7 +160,7 @@ services:
     arguments:
       - "%kernel.cache_dir%"
 
-  zipkin.span_namer.cache_warmer:
+  zipkin.span_namer.route.cache_warmer:
     class: ZipkinBundle\SpanNamers\Route\CacheWarmer
     arguments:
       - "@router"
