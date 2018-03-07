@@ -63,6 +63,11 @@ final class ZipkinExtension extends Extension
         );
 
         $container->setParameter(
+            'zipkin.reporter.metrics',
+            $config['reporter']['metrics']
+        );
+
+        $container->setParameter(
             'zipkin.reporter.http',
             $config['reporter']['http']
         );

@@ -49,6 +49,7 @@ final class TracingFactory
     private static function buildReporter(ContainerInterface $container)
     {
         $reporterName = $container->getParameter('zipkin.reporter.type');
+        $metricsName = $container->getParameter('zipkin.reporter.metrics');
 
         switch ($reporterName) {
             default:
@@ -59,7 +60,11 @@ final class TracingFactory
                 return new Noop();
                 break;
             case 'http':
-                return new Http(null, $container->getParameter('zipkin.reporter.http'));
+                return new Http(
+                    null,
+                    $container->getParameter('zipkin.reporter.http'),
+                    $metricsName === null ? null : $container->get($metricsName)
+                );
         }
     }
 
