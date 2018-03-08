@@ -49,6 +49,7 @@ final class Configuration implements ConfigurationInterface
                 ->arrayNode('reporter')->addDefaultsIfNotSet()
                     ->children()
                         ->scalarNode('type')->defaultValue('log')->end()
+                        ->scalarNode('metrics')->defaultValue(null)->end()
                         ->arrayNode('http')->addDefaultsIfNotSet()
                             ->children()
                                 ->scalarNode('endpoint_url')->defaultValue('http://zipkin:9411/api/v2/spans')->end()

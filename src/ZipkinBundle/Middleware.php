@@ -79,6 +79,10 @@ final class Middleware
 
     public function onKernelException(GetResponseForExceptionEvent $event)
     {
+        if (!$event->isMasterRequest()) {
+            return;
+        }
+
         $span = $this->tracing->getTracer()->getCurrentSpan();
 
         if ($span !== null) {
@@ -88,21 +92,28 @@ final class Middleware
 
     public function onKernelTerminate(PostResponseEvent $event)
     {
-        $span = $this->tracing->getTracer()->getCurrentSpan();
-
-        if ($span !== null) {
-            $request = $event->getRequest();
-
-            $routeName = $request->attributes->get('_route');
-            if ($routeName) {
-                $span->tag('symfony.route', $routeName);
-            }
-
-            $span->setName($this->spanNamer->getName($request));
-            $span->tag(Tags\HTTP_STATUS_CODE, $event->getResponse()->getStatusCode());
-            $span->finish();
-            call_user_func($this->scopeCloser);
+        if (!$event->isMasterRequest()) {
+            return;
         }
+
+        $request = $event->getRequest();
+
+        $span = $this->tracing->getTracer()->getCurrentSpan();
+        if ($span === null) {
+            return;
+        }
+
+        $span->setName($this->spanNamer->getName($request));
+
+        $routeName = $request->attributes->get('_route');
+        if ($routeName) {
+            $span->tag('symfony.route', $routeName);
+        }
+
+        $span->tag(Tags\HTTP_STATUS_CODE, $event->getResponse()->getStatusCode());
+        $span->finish();
+
+        call_user_func($this->scopeCloser);
 
         $this->flushTracer();
     }
