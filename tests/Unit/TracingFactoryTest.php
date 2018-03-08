@@ -15,7 +15,8 @@ final class TracingFactoryTest extends PHPUnit_Framework_TestCase
         'zipkin.noop' => false,
         'zipkin.service_name' => 'symfony',
         'zipkin.sampler.type' => 'always',
-        'zipkin.reporter.type' => 'log'
+        'zipkin.reporter.type' => 'log',
+        'zipkin.reporter.metrics' => null
     ];
 
     /**

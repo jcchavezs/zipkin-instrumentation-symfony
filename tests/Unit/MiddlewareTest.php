@@ -61,6 +61,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $middleware->onKernelRequest($event->reveal());
 
         $exceptionEvent = $this->prophesize(GetResponseForExceptionEvent::class);
+        $exceptionEvent->isMasterRequest()->willReturn(false);
         $exceptionEvent->getException()->shouldNotBeCalled();
         $middleware->onKernelException($exceptionEvent->reveal());
     }
@@ -79,6 +80,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $middleware->onKernelRequest($event->reveal());
 
         $exceptionEvent = $this->prophesize(GetResponseForExceptionEvent::class);
+        $exceptionEvent->isMasterRequest()->willReturn(true);
         $exceptionEvent->getException()->shouldBeCalled()->willReturn(new Exception());
         $middleware->onKernelException($exceptionEvent->reveal());
     }
@@ -97,6 +99,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $middleware->onKernelRequest($event->reveal());
 
         $responseEvent = $this->prophesize(PostResponseEvent::class);
+        $responseEvent->isMasterRequest()->willReturn(false);
         $responseEvent->getRequest()->shouldNotBeCalled();
         $middleware->onKernelTerminate($responseEvent->reveal());
     }
@@ -116,6 +119,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $middleware->onKernelRequest($event->reveal());
 
         $exceptionEvent = $this->prophesize(PostResponseEvent::class);
+        $exceptionEvent->isMasterRequest()->willReturn(true);
         $exceptionEvent->getRequest()->shouldBeCalled()->willReturn($request);
         $exceptionEvent->getResponse()->shouldBeCalled()->willReturn(new Response);
         $middleware->onKernelTerminate($exceptionEvent->reveal());
