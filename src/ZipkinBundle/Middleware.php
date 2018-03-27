@@ -5,6 +5,7 @@ namespace ZipkinBundle;
 use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
@@ -110,7 +111,12 @@ final class Middleware
             $span->tag('symfony.route', $routeName);
         }
 
-        $span->tag(Tags\HTTP_STATUS_CODE, $event->getResponse()->getStatusCode());
+        $statusCode = $event->getResponse()->getStatusCode();
+        if ($statusCode > 399) {
+            $span->tag(Tags\ERROR, Response::$statusTexts[$statusCode]);
+        }
+
+        $span->tag(Tags\HTTP_STATUS_CODE, $statusCode);
         $span->finish();
 
         call_user_func($this->scopeCloser);
