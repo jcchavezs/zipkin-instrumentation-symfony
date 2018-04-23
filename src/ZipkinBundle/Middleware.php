@@ -6,7 +6,6 @@ use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
@@ -18,7 +17,6 @@ use Zipkin\Span;
 use Zipkin\Tags;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
-use ZipkinBundle\SpanNamers\DefaultNamer;
 use ZipkinBundle\SpanNamers\SpanNamerInterface;
 
 final class Middleware
