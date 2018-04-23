@@ -3,6 +3,7 @@
 namespace ZipkinBundle\SpanNamers\Route;
 
 use Symfony\Component\HttpFoundation\Request;
+use Zipkin\Span;
 use ZipkinBundle\SpanNamers\SpanNamerInterface;
 
 final class SpanNamer implements SpanNamerInterface
@@ -28,19 +29,17 @@ final class SpanNamer implements SpanNamerInterface
     /**
      * @inheritdoc
      */
-    public function getName(Request $request)
+    public function __invoke(Request $request, Span $span)
     {
         $method = $request->getMethod();
         $routeName = $request->attributes->get('_route');
 
         if ($routeName === null) {
-            return $method . ' ' . self::NOT_FOUND;
+            $span->setName($method . ' ' . self::NOT_FOUND);
         }
 
         if (array_key_exists($routeName, $this->routes)) {
-            return $method . ' ' . $this->routes[$routeName];
+            $span->setName($method . ' ' . $this->routes[$routeName]);
         }
-
-        return $method;
     }
 }

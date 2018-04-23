@@ -4,6 +4,7 @@ namespace ZipkinBundle\Tests\Unit\SpanNamers\Route;
 
 use PHPUnit_Framework_TestCase;
 use Symfony\Component\HttpFoundation\Request;
+use Zipkin\Span;
 use ZipkinBundle\SpanNamers\Route\CacheWarmer;
 use ZipkinBundle\SpanNamers\Route\SpanNamer;
 
@@ -15,9 +16,10 @@ final class SpanNamerTest extends PHPUnit_Framework_TestCase
 
     public function testGetNameForNonExistingRouteSuccess()
     {
+        $span = $this->prophesize(Span::class);
+        $span->setName('GET not_found')->shouldBeCalled();
         $naming = SpanNamer::create(__DIR__);
-        $name = $naming->getName(new Request());
-        $this->assertEquals('GET not_found', $name);
+        $naming(new Request(), $span->reveal());
     }
 
     public function testGetNameForExistingRouteSuccess()
@@ -39,8 +41,10 @@ final class SpanNamerTest extends PHPUnit_Framework_TestCase
         );
 
         $naming = SpanNamer::create($cacheDir);
-        $name = $naming->getName($request);
-        $this->assertEquals(self::METHOD . ' ' . self::ROUTE_PATH, $name);
+
+        $span = $this->prophesize(Span::class);
+        $span->setName(self::METHOD . ' ' . self::ROUTE_PATH)->shouldBeCalled();
+        $naming($request, $span->reveal());
         unlink($filename);
     }
 }
