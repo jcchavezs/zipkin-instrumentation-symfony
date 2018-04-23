@@ -49,15 +49,15 @@ final class Middleware
     public function __construct(
         Tracing $tracing,
         LoggerInterface $logger,
-        SpanNamerInterface $spanNamer = null,
-        array $tags = []
+        array $tags = [],
+        SpanNamerInterface $spanNamer = null
     ) {
         $this->tracing = $tracing;
         $this->logger = $logger;
+        $this->tags = $tags;
         $this->spanNamer = $spanNamer ?: function (Request $request, Span $span) {
             $span->setName($request->getMethod());
         };
-        $this->tags = $tags;
     }
 
     public function onKernelRequest(GetResponseEvent $event)
