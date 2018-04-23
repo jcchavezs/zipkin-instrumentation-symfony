@@ -14,6 +14,7 @@ use Zipkin\Kind;
 use Zipkin\Propagation\Map;
 use Zipkin\Propagation\SamplingFlags;
 use Zipkin\Propagation\TraceContext;
+use Zipkin\Span;
 use Zipkin\Tags;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
@@ -42,14 +43,23 @@ final class Middleware
      */
     private $spanNamer;
 
+    /**
+     * @var array
+     */
+    private $tags;
+
     public function __construct(
         Tracing $tracing,
         LoggerInterface $logger,
-        SpanNamerInterface $spanNamer = null
+        SpanNamerInterface $spanNamer = null,
+        array $tags = []
     ) {
         $this->tracing = $tracing;
         $this->logger = $logger;
-        $this->spanNamer = $spanNamer ?: DefaultNamer::create();
+        $this->spanNamer = $spanNamer ?: function (Request $request, Span $span) {
+            $span->setName($request->getMethod());
+        };
+        $this->tags = $tags;
     }
 
     public function onKernelRequest(GetResponseEvent $event)
@@ -74,6 +84,9 @@ final class Middleware
         $span->tag(Tags\HTTP_HOST, $request->getHost());
         $span->tag(Tags\HTTP_METHOD, $request->getMethod());
         $span->tag(Tags\HTTP_PATH, $request->getPathInfo());
+        foreach ($this->tags as $key => $value) {
+            $span->tag($key, $value);
+        }
 
         $this->scopeCloser = $this->tracing->getTracer()->openScope($span);
     }
@@ -104,7 +117,7 @@ final class Middleware
             return;
         }
 
-        $span->setName($this->spanNamer->getName($request));
+        call_user_func($this->spanNamer, $request, $span);
 
         $routeName = $request->attributes->get('_route');
         if ($routeName) {

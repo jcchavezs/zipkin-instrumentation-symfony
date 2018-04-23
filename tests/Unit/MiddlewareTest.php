@@ -10,12 +10,18 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
-use Zipkin\Span;
+use Zipkin\Reporters\InMemory;
+use Zipkin\Samplers\BinarySampler;
 use Zipkin\TracingBuilder;
 use ZipkinBundle\Middleware;
+use Zipkin\Reporters\InMemory as InMemoryReporter;
 
 class MiddlewareTest extends PHPUnit_Framework_TestCase
 {
+    const HTTP_HOST = 'localhost';
+    const HTTP_METHOD = 'OPTIONS';
+    const HTTP_PATH = '/foo';
+    
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
         $tracing = TracingBuilder::create()->build();
@@ -33,18 +39,37 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
 
     public function testSpanIsCreatedOnKernelRequest()
     {
-        $tracing = TracingBuilder::create()->build();
+        $reporter = new InMemoryReporter();
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->havingReporter($reporter)
+            ->build();
         $logger = new NullLogger();
 
         $middleware = new Middleware($tracing, $logger);
 
+        $request = new Request([], [], [], [], [], [
+            'REQUEST_METHOD' => self::HTTP_METHOD,
+            'REQUEST_URI' => self::HTTP_PATH,
+            'HTTP_HOST' => self::HTTP_HOST,
+        ]);
+
         $event = $this->prophesize(GetResponseEvent::class);
         $event->isMasterRequest()->willReturn(true);
-        $event->getRequest()->willReturn(new Request());
+        $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());
 
-        $this->assertInstanceOf(Span::class, $tracing->getTracer()->getCurrentSpan());
+        $tracing->getTracer()->flush();
+        $spans = $reporter->flush();
+        $this->assertCount(1, $spans);
+        $this->assertArraySubset([
+            'tags' => [
+                'http.host' => self::HTTP_HOST,
+                'http.method' => self::HTTP_METHOD,
+                'http.path' => self::HTTP_PATH
+            ]
+        ], $spans[0]->toArray());
     }
 
     public function testNoSpanIsTaggedOnKernelExceptionIfItIsNotStarted()
@@ -106,12 +131,21 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
 
     public function testSpanIsTaggedOnKernelTerminate()
     {
-        $tracing = TracingBuilder::create()->build();
+        $reporter = new InMemoryReporter();
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->havingReporter($reporter)
+            ->build();
         $logger = new NullLogger();
 
         $middleware = new Middleware($tracing, $logger);
 
-        $request = new Request();
+        $request = new Request([], [], [], [], [], [
+            'REQUEST_METHOD' => self::HTTP_METHOD,
+            'REQUEST_URI' => self::HTTP_PATH,
+            'HTTP_HOST' => self::HTTP_HOST,
+        ]);
+
         $event = $this->prophesize(GetResponseEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
@@ -124,6 +158,15 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $exceptionEvent->getResponse()->shouldBeCalled()->willReturn(new Response);
         $middleware->onKernelTerminate($exceptionEvent->reveal());
 
-        $this->assertNull($tracing->getTracer()->getCurrentSpan());
+        $tracing->getTracer()->flush();
+        $spans = $reporter->flush();
+        $this->assertCount(1, $spans);
+        $this->assertArraySubset([
+            'tags' => [
+                'http.host' => self::HTTP_HOST,
+                'http.method' => self::HTTP_METHOD,
+                'http.path' => self::HTTP_PATH
+            ]
+        ], $spans[0]->toArray());
     }
 }
