@@ -124,6 +124,25 @@ zipkin:
       endpoint_url: http://zipkin:9411/api/v2/spans
 ```
 
+## Default tags
+
+You can add tags to every span being created by the tracer. This functionality is
+useful when you need to add tags like instance name.
+
+```yaml
+services:
+  tracing_middleware:
+    class: ZipkinBundle\Middleware
+    arguments:
+      - "@zipkin.default_tracing"
+      - "@logger"
+      - { instance: %instance_name% }
+    tags:
+      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
+      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.exception }
+``` 
+
 ## Custom Tracing
 
 Although this bundle provides a tracer based on the configuration parameters
@@ -172,6 +191,7 @@ services:
     arguments:
       - "@zipkin.default_tracing"
       - "@logger"
+      - { instance: %instance_name% }
       - "@zipkin.span_namer.route"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 256 }

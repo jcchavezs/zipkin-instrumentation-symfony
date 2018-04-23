@@ -21,6 +21,8 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
     const HTTP_HOST = 'localhost';
     const HTTP_METHOD = 'OPTIONS';
     const HTTP_PATH = '/foo';
+    const TAG_KEY = 'key';
+    const TAG_VALUE = 'value';
     
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
@@ -46,7 +48,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $middleware = new Middleware($tracing, $logger, [self::TAG_KEY => self::TAG_VALUE]);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -67,7 +69,8 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
             'tags' => [
                 'http.host' => self::HTTP_HOST,
                 'http.method' => self::HTTP_METHOD,
-                'http.path' => self::HTTP_PATH
+                'http.path' => self::HTTP_PATH,
+                self::TAG_KEY => self::TAG_VALUE,
             ]
         ], $spans[0]->toArray());
     }
