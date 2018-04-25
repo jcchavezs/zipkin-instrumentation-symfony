@@ -28,11 +28,6 @@ final class ZipkinExtension extends Extension
         );
 
         $container->setParameter(
-            'zipkin.tags',
-            $config['tags']
-        );
-
-        $container->setParameter(
             'zipkin.sampler.type',
             $config['sampler']['type']
         );
