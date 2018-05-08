@@ -13,11 +13,9 @@ use Zipkin\Kind;
 use Zipkin\Propagation\Map;
 use Zipkin\Propagation\SamplingFlags;
 use Zipkin\Propagation\TraceContext;
-use Zipkin\Span;
 use Zipkin\Tags;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
-use ZipkinBundle\SpanNamers\SpanNamerInterface;
 
 final class Middleware
 {
@@ -37,27 +35,25 @@ final class Middleware
     private $scopeCloser;
 
     /**
-     * @var SpanNamerInterface
-     */
-    private $spanNamer;
-
-    /**
      * @var array
      */
     private $tags;
+
+    /**
+     * @var SpanCustomizer[]|array
+     */
+    private $spanCustomizers;
 
     public function __construct(
         Tracing $tracing,
         LoggerInterface $logger,
         array $tags = [],
-        SpanNamerInterface $spanNamer = null
+        SpanCustomizer ...$spanCustomizers
     ) {
         $this->tracing = $tracing;
         $this->logger = $logger;
         $this->tags = $tags;
-        $this->spanNamer = $spanNamer ?: function (Request $request, Span $span) {
-            $span->setName($request->getMethod());
-        };
+        $this->spanCustomizers = $spanCustomizers;
     }
 
     public function onKernelRequest(GetResponseEvent $event)
@@ -78,6 +74,7 @@ final class Middleware
 
         $span = $this->tracing->getTracer()->nextSpan($spanContext);
         $span->start();
+        $span->setName($request->getMethod());
         $span->setKind(Kind\SERVER);
         $span->tag(Tags\HTTP_HOST, $request->getHost());
         $span->tag(Tags\HTTP_METHOD, $request->getMethod());
@@ -115,7 +112,9 @@ final class Middleware
             return;
         }
 
-        call_user_func($this->spanNamer, $request, $span);
+        foreach ($this->spanCustomizers as $customizer) {
+            $customizer($span);
+        }
 
         $routeName = $request->attributes->get('_route');
         if ($routeName) {

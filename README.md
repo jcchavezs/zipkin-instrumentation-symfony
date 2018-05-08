@@ -12,7 +12,7 @@ A Zipkin integration for Symfony applications
 ## Installation
 
 ```bash
-composer require jcchavezs/zipkin-symfony
+composer require jcchavezs/zipkin-instrumentation-symfony
 ```
 
 ## Getting started
@@ -162,9 +162,10 @@ services:
       - { name: kernel.event_listener, event: kernel.exception }
 ```
 
-## Span namers
+## Span customizers
 
-By default the span name is being defined by the HTTP verb. This approach is
+Span customizers allow the user to add custom information to the span. For example
+by default the span name is being defined by the HTTP verb. This approach is
 a not so bad option seeking for low cardinality in span naming. A more useful
 approach is to use the route path: `/user/{user_id}` however including the 
 `@router` in the middleware is expensive and reduces its performance thus the
@@ -173,14 +174,15 @@ can be used to resolve the path in runtime.
 
 ```yaml
 services:
-  zipkin.span_namer.route:
-    class: ZipkinBundle\SpanNamers\Route\SpanNamer
-    factory: [ZipkinBundle\SpanNamers\Route\SpanNamer, 'create']
+  zipkin.span_customizer.by_path_namer:
+    class: ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer
+    factory: [ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer, 'create']
     arguments:
       - "%kernel.cache_dir%"
+      - "@request_stack"
 
-  zipkin.span_namer.route.cache_warmer:
-    class: ZipkinBundle\SpanNamers\Route\CacheWarmer
+  zipkin.span_customizer.by_path_namer.cache_warmer:
+    class: ZipkinBundle\SpanCustomizers\ByPathNamer\CacheWarmer
     arguments:
       - "@router"
     tags:
@@ -192,7 +194,7 @@ services:
       - "@zipkin.default_tracing"
       - "@logger"
       - { instance: %instance_name% }
-      - "@zipkin.span_namer.route"
+      - "@zipkin.span_customizer.by_path_namer"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 256 }
       - { name: kernel.event_listener, event: kernel.terminate }

@@ -1,5 +1,5 @@
 {
-    "name": "jcchavezs/zipkin-symfony",
+    "name": "jcchavezs/zipkin-instrumentation-symfony",
     "description": "A Zipkin integration for Symfony applications",
     "type": "symfony-bundle",
     "require": {

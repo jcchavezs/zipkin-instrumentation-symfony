@@ -1,6 +1,6 @@
 <?php
 
-namespace ZipkinBundle\SpanNamers\Route;
+namespace ZipkinBundle\SpanCustomizers\ByPathNamer;
 
 use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
 use Symfony\Component\Routing\RouterInterface;
