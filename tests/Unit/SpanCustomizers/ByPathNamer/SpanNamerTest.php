@@ -1,12 +1,13 @@
 <?php
 
-namespace ZipkinBundle\Tests\Unit\SpanNamers\Route;
+namespace ZipkinBundle\Tests\Unit\SpanCustomizers\ByPathNamer;
 
 use PHPUnit_Framework_TestCase;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Zipkin\Span;
-use ZipkinBundle\SpanNamers\Route\CacheWarmer;
-use ZipkinBundle\SpanNamers\Route\SpanNamer;
+use ZipkinBundle\SpanCustomizers\ByPathNamer\CacheWarmer;
+use ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer;
 
 final class SpanNamerTest extends PHPUnit_Framework_TestCase
 {
@@ -16,10 +17,12 @@ final class SpanNamerTest extends PHPUnit_Framework_TestCase
 
     public function testGetNameForNonExistingRouteSuccess()
     {
+        $requestStack = new RequestStack();
+        $requestStack->push(new Request());
         $span = $this->prophesize(Span::class);
         $span->setName('GET not_found')->shouldBeCalled();
-        $naming = SpanNamer::create(__DIR__);
-        $naming(new Request(), $span->reveal());
+        $naming = SpanCustomizer::create(__DIR__, $requestStack);
+        $naming($span->reveal());
     }
 
     public function testGetNameForExistingRouteSuccess()
@@ -39,12 +42,14 @@ final class SpanNamerTest extends PHPUnit_Framework_TestCase
             [],
             ['REQUEST_METHOD' => self::METHOD]
         );
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
 
-        $naming = SpanNamer::create($cacheDir);
+        $naming = SpanCustomizer::create($cacheDir, $requestStack);
 
         $span = $this->prophesize(Span::class);
         $span->setName(self::METHOD . ' ' . self::ROUTE_PATH)->shouldBeCalled();
-        $naming($request, $span->reveal());
+        $naming($span->reveal());
         unlink($filename);
     }
 }

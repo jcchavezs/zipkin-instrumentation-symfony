@@ -4,13 +4,13 @@ namespace ZipkinBundle;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Zipkin\Endpoint;
-use Zipkin\PercentageSampler;
 use Zipkin\Reporter;
 use Zipkin\Reporters\Http;
 use Zipkin\Reporters\Log;
 use Zipkin\Reporters\Noop;
 use Zipkin\Sampler;
 use Zipkin\Samplers\BinarySampler;
+use Zipkin\Samplers\PercentageSampler;
 use Zipkin\Tracing;
 use Zipkin\TracingBuilder;
 
