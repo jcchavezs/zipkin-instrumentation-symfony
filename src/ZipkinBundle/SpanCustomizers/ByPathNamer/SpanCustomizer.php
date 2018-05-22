@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle\SpanCustomizers\ByPathNamer;
 
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Zipkin\Span;
 use ZipkinBundle\SpanCustomizer as SpanCustomizerInterface;
@@ -15,33 +16,22 @@ final class SpanCustomizer implements SpanCustomizerInterface
      */
     private $routes;
 
-    /**
-     * @var RequestStack
-     */
-    private $requestStack;
-
-    private function __construct(array $routes, RequestStack $requestStack)
+    private function __construct(array $routes)
     {
         $this->routes = $routes;
-        $this->requestStack = $requestStack;
     }
 
-    public static function create($cacheDir, RequestStack $requestStack)
+    public static function create($cacheDir)
     {
         $routes = @include CacheWarmer::buildOutputFilename($cacheDir);
-        return new self($routes === false ? [] : $routes, $requestStack);
+        return new self($routes === false ? [] : $routes);
     }
 
     /**
      * @inheritdoc
      */
-    public function __invoke(Span $span)
+    public function __invoke(Request $request, Span $span)
     {
-        $request = $this->requestStack->getMasterRequest();
-        if ($request === null) {
-            return;
-        }
-
         $method = $request->getMethod();
         $routeName = $request->attributes->get('_route');
 

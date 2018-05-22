@@ -17,12 +17,10 @@ final class SpanNamerTest extends PHPUnit_Framework_TestCase
 
     public function testGetNameForNonExistingRouteSuccess()
     {
-        $requestStack = new RequestStack();
-        $requestStack->push(new Request());
         $span = $this->prophesize(Span::class);
         $span->setName('GET not_found')->shouldBeCalled();
-        $naming = SpanCustomizer::create(__DIR__, $requestStack);
-        $naming($span->reveal());
+        $naming = SpanCustomizer::create(__DIR__);
+        $naming(new Request(), $span->reveal());
     }
 
     public function testGetNameForExistingRouteSuccess()
@@ -42,14 +40,12 @@ final class SpanNamerTest extends PHPUnit_Framework_TestCase
             [],
             ['REQUEST_METHOD' => self::METHOD]
         );
-        $requestStack = new RequestStack();
-        $requestStack->push($request);
 
-        $naming = SpanCustomizer::create($cacheDir, $requestStack);
+        $naming = SpanCustomizer::create($cacheDir);
 
         $span = $this->prophesize(Span::class);
         $span->setName(self::METHOD . ' ' . self::ROUTE_PATH)->shouldBeCalled();
-        $naming($span->reveal());
+        $naming($request, $span->reveal());
         unlink($filename);
     }
 }
