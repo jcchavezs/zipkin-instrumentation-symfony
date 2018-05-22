@@ -164,13 +164,13 @@ services:
 
 ## Span customizers
 
-Span customizers allow the user to add custom information to the span. For example
-by default the span name is being defined by the HTTP verb. This approach is
-a not so bad option seeking for low cardinality in span naming. A more useful
-approach is to use the route path: `/user/{user_id}` however including the 
-`@router` in the middleware is expensive and reduces its performance thus the
-best is to precompile (aka cache warm up) a map of `name => path` in cache that
-can be used to resolve the path in runtime.
+Span customizers allow the user to add custom information to the span based on 
+the request. For example by default the span name is being defined by the HTTP 
+verb. This approach is a not so bad option seeking for low cardinality in span 
+naming. A more useful approach is to use the route path: `/user/{user_id}` however
+including the `@router` in the middleware is expensive and reduces its performance
+thus the best is to precompile (aka cache warm up) a map of `name => path` in cache
+that can be used to resolve the path in runtime.
 
 ```yaml
 services:
@@ -179,7 +179,6 @@ services:
     factory: [ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer, 'create']
     arguments:
       - "%kernel.cache_dir%"
-      - "@request_stack"
 
   zipkin.span_customizer.by_path_namer.cache_warmer:
     class: ZipkinBundle\SpanCustomizers\ByPathNamer\CacheWarmer

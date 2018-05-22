@@ -113,7 +113,7 @@ final class Middleware
         }
 
         foreach ($this->spanCustomizers as $customizer) {
-            $customizer($span);
+            $customizer($request, $span);
         }
 
         $routeName = $request->attributes->get('_route');
