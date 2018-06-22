@@ -8,6 +8,8 @@ zipkin:
         - "/_wdt/*"
   reporter:
     type: http
+    http:
+      endpoint_url: http://127.0.0.1:9411/api/v2/spans
 
 services:
   zipkin.span_namer.route:

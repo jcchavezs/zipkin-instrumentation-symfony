@@ -9,7 +9,7 @@ composer create-project symfony/website-skeleton:${SYMFONY_VERSION} ${APP_FOLDER
 cd ${APP_FOLDER}
 mv composer.json composer.json.dist
 cat composer.json.dist \
-| jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=example --exclude=composer.lock --exclude=vendor ../../../ .zipkin-instrumentation-symfony"]' \
+| jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=tests/Integration --exclude=composer.lock --exclude=vendor ../../../ .zipkin-instrumentation-symfony"]' \
 | jq '.scripts["pre-install-cmd"] = ["@sync"]' \
 | jq '.scripts["pre-update-cmd"] = ["@sync"]' \
 | jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "dev-master"' \
@@ -20,9 +20,9 @@ rm composer.lock
 composer require symfony/web-server-bundle --dev
 
 cp ../tracing.yaml ./config/tracing.yaml
+cp ../HealthController.php ./src/Controller
 
 mv ./config/services.yaml ./config/services.yaml.dist
 echo "imports: [{ resource: tracing.yaml }]" > ./config/services.yaml
 cat ./config/services.yaml.dist >> ./config/services.yaml
 
-php bin/console server:run
