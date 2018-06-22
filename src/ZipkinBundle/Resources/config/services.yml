@@ -1,12 +1,14 @@
 services:
   zipkin.default_tracing:
     class: Zipkin\DefaultTracing
+    public: true
     factory: [ZipkinBundle\TracingFactory, build]
     arguments:
       - "@service_container"
 
   zipkin.sampler.route:
     class: ZipkinBundle\Samplers\RouteSampler
+    public: true
     arguments:
       - "@request_stack"
       - "%zipkin.sampler.route.included_routes%"
@@ -14,6 +16,7 @@ services:
 
   zipkin.sampler.path:
     class: ZipkinBundle\Samplers\PathSampler
+    public: true
     arguments:
       - "@request_stack"
       - "%zipkin.sampler.path.included_paths%"
