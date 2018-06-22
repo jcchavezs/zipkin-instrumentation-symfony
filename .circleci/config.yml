@@ -1,0 +1,33 @@
+version: 2
+
+jobs:
+  symfony-3.3:
+    docker:
+      # node-browsers come with java pre-installed
+      - image: circleci/php:7.0-node-browsers
+    working_directory: ~/openzipkin
+    steps:
+      - checkout
+      - run:
+          name: Install Composer
+          command: |
+            php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+            php -r "if (hash_file('SHA384', 'composer-setup.php') === trim(file_get_contents('https://composer.github.io/installer.sig'))) { echo 'Installer verified'; } else { echo 'Installer invalid'; unlink('composer-setup.php'); } echo PHP_EOL;"
+            php composer-setup.php
+            php -r "unlink('composer-setup.php');"
+      - run: composer install -n --prefer-dist
+      - run: curl -sSL https://zipkin.io/quickstart.sh | bash -s
+      - run:
+          background: true
+          command: java -jar zipkin.jar
+      # block until zipkin is available
+      - run: wget --retry-connrefused -T 60 -O /dev/null http://127.0.0.1:9411/health
+      # start both processes in the background, but don't use composer as it dies
+      - run:
+          background: true
+          command: ./tests/Integration/test.sh
+      - run: wget -v --retry-connrefused -T 5 -O /dev/null 127.0.0.1:8081
+      - run: |
+          # wait just in case
+          sleep 1
+          test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
