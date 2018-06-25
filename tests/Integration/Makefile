@@ -1,5 +1,5 @@
 build:
-	./build.sh
+	./build.sh $(SYMFONY_VERSION)
 
 run-server:
 	php ./test-app/bin/console server:run
