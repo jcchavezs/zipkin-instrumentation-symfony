@@ -221,7 +221,7 @@ This test run in our CI tests but it can be also reproduced in local by:
 1. Go to `tests/Integration`
 2. Run `make build` to build the test application
 3. Run `make run-zipkin` to start zipkin sever
-4. Run `make run-server` to start the test application
+4. Run `make run-app` to start the test application
 5. Hit the application `curl -i http://localhost:8000/_health`
 6. Check that traces are in zipkin (`http://localhost:9411/zipkin/`)
  
