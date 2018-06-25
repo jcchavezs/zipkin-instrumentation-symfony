@@ -2,6 +2,7 @@
 
 APP_FOLDER=test-app
 SYMFONY_VERSION=$1
+LIBRARY_BRANCH=$2
 
 # Deletes old executions of the build
 rm -rf ${APP_FOLDER}
@@ -15,7 +16,7 @@ cat composer.json.dist \
 | jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=tests/Integration --exclude=composer.lock --exclude=vendor ../../../ .zipkin-instrumentation-symfony"]' \
 | jq '.scripts["pre-install-cmd"] = ["@sync"]' \
 | jq '.scripts["pre-update-cmd"] = ["@sync"]' \
-| jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "dev-master"' \
+| jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "dev-'${LIBRARY_BRANCH}'"' \
 | jq '.repositories = [{"type": "path","url": "./.zipkin-instrumentation-symfony/","options": {"symlink": true}}]' > composer.json
 
 rm composer.lock

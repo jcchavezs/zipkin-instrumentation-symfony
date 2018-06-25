@@ -1,5 +1,5 @@
 build: ## Builds the symfony app
-	./build.sh $(SYMFONY_VERSION)
+	./build.sh $(SYMFONY_VERSION) $(LIBRARY_BRANCH)
 
 run-app: ## Runs symfony app
 	php ./test-app/bin/console server:run
