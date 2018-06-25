@@ -3,10 +3,10 @@
     "description": "A Zipkin integration for Symfony applications",
     "type": "symfony-bundle",
     "require": {
-        "symfony/config": "~2.7|~3.0",
-        "symfony/http-kernel": "~2.7|~3.0",
-        "symfony/routing": "~2.7|~3.0",
-        "symfony/dependency-injection": "~2.7|~3.0",
+        "symfony/config": "~2.7|~3.0|~4.0",
+        "symfony/http-kernel": "~2.7|~3.0|~4.0",
+        "symfony/routing": "~2.7|~3.0|~4.0",
+        "symfony/dependency-injection": "~2.7|~3.0|~4.0",
         "jcchavezs/zipkin": "~1.2.3"
     },
     "require-dev": {
