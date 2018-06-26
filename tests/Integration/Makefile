@@ -1,3 +1,5 @@
+SYMFONY_VERSION ?= dev-master
+
 build: ## Builds the symfony app
 	./build.sh $(SYMFONY_VERSION) $(LIBRARY_BRANCH)
 
