@@ -97,7 +97,7 @@ final class TracingFactory
                 break;
             case 'percentage':
                 return PercentageSampler::create(
-                    (float) $container->getParameter('zipkin.sampler.percentage.rate')
+                    (float) $container->getParameter('zipkin.sampler.percentage')
                 );
                 break;
             default:

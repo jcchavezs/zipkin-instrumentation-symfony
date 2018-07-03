@@ -32,6 +32,8 @@ jobs:
           # wait just in case
           sleep 1
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          exit $?
+
   symfony-4.0:
     docker:
       # node-browsers come with java pre-installed
@@ -63,6 +65,7 @@ jobs:
           # wait just in case
           sleep 1
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          exit $?
 
 workflows:
   version: 2
