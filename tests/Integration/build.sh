@@ -3,6 +3,7 @@
 APP_FOLDER=test-app
 SYMFONY_VERSION=${1:-dev-master}
 LIBRARY_BRANCH=dev-${2:-master}
+SAMPLER=${3:-default}
 
 # Deletes old executions of the build
 rm -rf ${APP_FOLDER}
@@ -24,7 +25,7 @@ rm composer.lock
 composer require symfony/web-server-bundle --dev
 
 # includes configuration files to run the middleware in the app
-cp ../tracing.yaml ./config/tracing.yaml
+cp ../tracing.${SAMPLER}.yaml ./config/tracing.yaml
 cp ../HealthController.php ./src/Controller
 mv ./config/services.yaml ./config/services.yaml.dist
 echo "imports: [{ resource: tracing.yaml }]" > ./config/services.yaml

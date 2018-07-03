@@ -1,7 +1,8 @@
 SYMFONY_VERSION ?= dev-master
+LIBRARY_BRANCH ?= 3.0
 
 build: ## Builds the symfony app
-	./build.sh $(SYMFONY_VERSION) $(LIBRARY_BRANCH)
+	./build.sh $(SYMFONY_VERSION) $(LIBRARY_BRANCH) $(SAMPLER)
 
 run-app: ## Runs symfony app
 	php ./test-app/bin/console server:run
