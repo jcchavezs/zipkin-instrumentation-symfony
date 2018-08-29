@@ -126,7 +126,7 @@ final class Middleware
             $span->tag(Tags\ERROR, Response::$statusTexts[$statusCode]);
         }
 
-        $span->tag(Tags\HTTP_STATUS_CODE, $statusCode);
+        $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
         $span->finish();
 
         call_user_func($this->scopeCloser);
