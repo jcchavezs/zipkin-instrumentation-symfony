@@ -23,6 +23,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
     const HTTP_PATH = '/foo';
     const TAG_KEY = 'key';
     const TAG_VALUE = 'value';
+    const EXCEPTION_MESSAGE = 'message';
     
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
@@ -96,9 +97,12 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
 
     public function testSpanIsTaggedOnKernelException()
     {
-        $tracing = TracingBuilder::create()->build();
+        $reporter = new InMemoryReporter();
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->havingReporter($reporter)
+            ->build();
         $logger = new NullLogger();
-
         $middleware = new Middleware($tracing, $logger);
 
         $event = $this->prophesize(GetResponseEvent::class);
@@ -109,8 +113,17 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
 
         $exceptionEvent = $this->prophesize(GetResponseForExceptionEvent::class);
         $exceptionEvent->isMasterRequest()->willReturn(true);
-        $exceptionEvent->getException()->shouldBeCalled()->willReturn(new Exception());
+        $exceptionEvent->getException()->shouldBeCalled()->willReturn(new Exception(self::EXCEPTION_MESSAGE));
         $middleware->onKernelException($exceptionEvent->reveal());
+
+        $tracing->getTracer()->flush();
+        $spans = $reporter->flush();
+        $this->assertCount(1, $spans);
+        $this->assertArraySubset([
+            'tags' => [
+                'error' => self::EXCEPTION_MESSAGE,
+            ]
+        ], $spans[0]->toArray());
     }
 
     public function testNoSpanIsTaggedOnKernelTerminateIfItIsNotStarted()
@@ -132,7 +145,20 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $middleware->onKernelTerminate($responseEvent->reveal());
     }
 
-    public function testSpanIsTaggedOnKernelTerminate()
+    public function statusCodeProvider()
+    {
+        return [
+            [200],
+            [300],
+            [400],
+            [500]
+        ];
+    }
+
+    /**
+     * @dataProvider statusCodeProvider
+     */
+    public function testSpanIsTaggedOnKernelTerminate($responseStatusCode)
     {
         $reporter = new InMemoryReporter();
         $tracing = TracingBuilder::create()
@@ -158,18 +184,23 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $exceptionEvent = $this->prophesize(PostResponseEvent::class);
         $exceptionEvent->isMasterRequest()->willReturn(true);
         $exceptionEvent->getRequest()->shouldBeCalled()->willReturn($request);
-        $exceptionEvent->getResponse()->shouldBeCalled()->willReturn(new Response);
+        $exceptionEvent->getResponse()->shouldBeCalled()->willReturn(new Response('', $responseStatusCode));
         $middleware->onKernelTerminate($exceptionEvent->reveal());
+
+        $assertTags = [
+            'http.host' => self::HTTP_HOST,
+            'http.method' => self::HTTP_METHOD,
+            'http.path' => self::HTTP_PATH,
+            'http.status_code' => (string) $responseStatusCode,
+        ];
+
+        if ($responseStatusCode > 399) {
+            $assertTags['error'] = (string) $responseStatusCode;
+        }
 
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset([
-            'tags' => [
-                'http.host' => self::HTTP_HOST,
-                'http.method' => self::HTTP_METHOD,
-                'http.path' => self::HTTP_PATH
-            ]
-        ], $spans[0]->toArray());
+        $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
     }
 }
