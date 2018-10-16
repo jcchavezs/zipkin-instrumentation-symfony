@@ -5,7 +5,6 @@ namespace ZipkinBundle;
 use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
@@ -123,7 +122,7 @@ final class Middleware
 
         $statusCode = $event->getResponse()->getStatusCode();
         if ($statusCode > 399) {
-            $span->tag(Tags\ERROR, Response::$statusTexts[$statusCode]);
+            $span->tag(Tags\ERROR, $statusCode);
         }
 
         $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
