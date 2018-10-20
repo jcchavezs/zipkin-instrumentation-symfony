@@ -83,10 +83,10 @@ zipkin:
   ...
   sampler:
     type: route
-    path:
-      included_paths:
+    route:
+      included_routes:
         - "my_route"
-      excluded_paths:
+      excluded_routes:
         - "another_route"
 ```
 
