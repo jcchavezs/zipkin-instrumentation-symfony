@@ -53,6 +53,7 @@ final class Configuration implements ConfigurationInterface
                         ->arrayNode('http')->addDefaultsIfNotSet()
                             ->children()
                                 ->scalarNode('endpoint_url')->defaultValue('http://zipkin:9411/api/v2/spans')->end()
+                                ->scalarNode('timeout')->defaultValue(null)->end()
                             ->end()
                         ->end()
                     ->end()

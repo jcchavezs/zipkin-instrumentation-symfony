@@ -123,6 +123,7 @@ zipkin:
     type: http
     http:
       endpoint_url: http://zipkin:9411/api/v2/spans
+      timeout: ~
 ```
 
 ## Default tags
