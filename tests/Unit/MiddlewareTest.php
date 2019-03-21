@@ -24,7 +24,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
     const TAG_KEY = 'key';
     const TAG_VALUE = 'value';
     const EXCEPTION_MESSAGE = 'message';
-    
+
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
         $tracing = TracingBuilder::create()->build();
@@ -195,7 +195,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         ];
 
         if ($responseStatusCode > 399) {
-            $assertTags['error'] = (string) $responseStatusCode;
+            $assertTags['error'] = 'true';
         }
 
         $tracing->getTracer()->flush();
