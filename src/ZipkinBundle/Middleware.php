@@ -122,7 +122,7 @@ final class Middleware
 
         $statusCode = $event->getResponse()->getStatusCode();
         if ($statusCode > 399) {
-            $span->tag(Tags\ERROR, $statusCode);
+            $span->tag(Tags\ERROR, (string) $statusCode);
         }
 
         $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
