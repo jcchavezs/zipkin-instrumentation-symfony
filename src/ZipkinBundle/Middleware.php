@@ -6,13 +6,15 @@ use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
+use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
+use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Zipkin\Kind;
-use Zipkin\Propagation\Map;
-use Zipkin\Propagation\SamplingFlags;
-use Zipkin\Propagation\TraceContext;
 use Zipkin\Tags;
+use Zipkin\Propagation\Map;
+use Zipkin\Propagation\TraceContext;
+use Zipkin\Propagation\SamplingFlags;
+use function Zipkin\Timestamp\now;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
 
@@ -55,6 +57,9 @@ final class Middleware
         $this->spanCustomizers = $spanCustomizers;
     }
 
+    /**
+     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-request
+     */
     public function onKernelRequest(GetResponseEvent $event)
     {
         if (!$event->isMasterRequest()) {
@@ -85,6 +90,24 @@ final class Middleware
         $this->scopeCloser = $this->tracing->getTracer()->openScope($span);
     }
 
+    /**
+     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-controller
+     */
+    public function onKernelController(FilterControllerEvent $event)
+    {
+        if (!$event->isMasterRequest()) {
+            return;
+        }
+
+        $span = $this->tracing->getTracer()->getCurrentSpan();
+        if ($span !== null) {
+            $span->annotate('symfony.kernel.controller', now());
+        }
+    }
+
+    /**
+     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-exception
+     */
     public function onKernelException(GetResponseForExceptionEvent $event)
     {
         if (!$event->isMasterRequest()) {
@@ -92,12 +115,14 @@ final class Middleware
         }
 
         $span = $this->tracing->getTracer()->getCurrentSpan();
-
         if ($span !== null) {
             $span->tag(Tags\ERROR, $event->getException()->getMessage());
         }
     }
 
+    /**
+     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-terminate
+     */
     public function onKernelTerminate(PostResponseEvent $event)
     {
         if (!$event->isMasterRequest()) {
