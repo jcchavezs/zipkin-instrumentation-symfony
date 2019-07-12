@@ -24,6 +24,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
     const TAG_KEY = 'key';
     const TAG_VALUE = 'value';
     const EXCEPTION_MESSAGE = 'message';
+    const LOCAL_COMPONENT = 'symfony';
     
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
@@ -71,6 +72,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
                 'http.host' => self::HTTP_HOST,
                 'http.method' => self::HTTP_METHOD,
                 'http.path' => self::HTTP_PATH,
+                'lc' => self::LOCAL_COMPONENT,
                 self::TAG_KEY => self::TAG_VALUE,
             ]
         ], $spans[0]->toArray());
@@ -122,6 +124,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
         $this->assertArraySubset([
             'tags' => [
                 'error' => self::EXCEPTION_MESSAGE,
+                'lc' => self::LOCAL_COMPONENT,
             ]
         ], $spans[0]->toArray());
     }
@@ -192,6 +195,7 @@ class MiddlewareTest extends PHPUnit_Framework_TestCase
             'http.method' => self::HTTP_METHOD,
             'http.path' => self::HTTP_PATH,
             'http.status_code' => (string) $responseStatusCode,
+            'lc' => self::LOCAL_COMPONENT,
         ];
 
         if ($responseStatusCode > 399) {
