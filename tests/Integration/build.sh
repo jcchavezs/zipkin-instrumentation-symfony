@@ -4,11 +4,12 @@ APP_FOLDER=test-app
 SYMFONY_VERSION=${1:-dev-master}
 LIBRARY_BRANCH=dev-${2:-master}
 SAMPLER=${3:-default}
+COMPOSER="$(which php) -d memory_limit=-1 /vendor/bin/composer"
 
 # Deletes old executions of the build
 rm -rf ${APP_FOLDER}
 
-composer create-project symfony/website-skeleton:${SYMFONY_VERSION} ${APP_FOLDER} || exit 1
+${COMPOSER} create-project symfony/website-skeleton:${SYMFONY_VERSION} ${APP_FOLDER} || exit 1
 cd ${APP_FOLDER}
 
 # Includes zipkin-instrumentation-symfony to the composer.json of the app
@@ -22,7 +23,7 @@ cat composer.json.dist \
 
 rm composer.lock
 
-composer require symfony/web-server-bundle --dev
+${COMPOSER} require symfony/web-server-bundle --dev
 
 # includes configuration files to run the middleware in the app
 cp ../tracing.${SAMPLER}.yaml ./config/tracing.yaml
