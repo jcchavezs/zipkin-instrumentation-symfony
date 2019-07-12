@@ -83,6 +83,7 @@ final class Middleware
         $span->tag(Tags\HTTP_HOST, $request->getHost());
         $span->tag(Tags\HTTP_METHOD, $request->getMethod());
         $span->tag(Tags\HTTP_PATH, $request->getPathInfo());
+        $span->tag(Tags\LOCAL_COMPONENT, 'symfony');
         foreach ($this->tags as $key => $value) {
             $span->tag($key, $value);
         }
