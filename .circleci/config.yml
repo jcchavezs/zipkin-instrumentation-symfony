@@ -15,7 +15,7 @@ jobs:
             php -r "if (hash_file('SHA384', 'composer-setup.php') === trim(file_get_contents('https://composer.github.io/installer.sig'))) { echo 'Installer verified'; } else { echo 'Installer invalid'; unlink('composer-setup.php'); } echo PHP_EOL;"
             php composer-setup.php
             php -r "unlink('composer-setup.php');"
-      - run: curl -sSL https://zipkin.apache.org/quickstart.sh | bash -s
+      - run: curl -sSL https://zipkin.io/quickstart.sh | bash -s
       - run:
           background: true
           command: java -jar zipkin.jar
@@ -48,7 +48,7 @@ jobs:
             php -r "if (hash_file('SHA384', 'composer-setup.php') === trim(file_get_contents('https://composer.github.io/installer.sig'))) { echo 'Installer verified'; } else { echo 'Installer invalid'; unlink('composer-setup.php'); } echo PHP_EOL;"
             php composer-setup.php
             php -r "unlink('composer-setup.php');"
-      - run: curl -sSL https://zipkin.apache.org/quickstart.sh | bash -s
+      - run: curl -sSL https://zipkin.io/quickstart.sh | bash -s
       - run:
           background: true
           command: java -jar zipkin.jar
