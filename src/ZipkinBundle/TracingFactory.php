@@ -2,17 +2,18 @@
 
 namespace ZipkinBundle;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Zipkin\Sampler;
+use Zipkin\Tracing;
 use Zipkin\Endpoint;
 use Zipkin\Reporter;
-use Zipkin\Reporters\Http;
 use Zipkin\Reporters\Log;
+use Zipkin\Reporters\Http;
 use Zipkin\Reporters\Noop;
-use Zipkin\Sampler;
+use Zipkin\TracingBuilder;
+use ZipkinBundle\InvalidSampler;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Samplers\PercentageSampler;
-use Zipkin\Tracing;
-use Zipkin\TracingBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 final class TracingFactory
 {
@@ -80,29 +81,43 @@ final class TracingFactory
     /**
      * @param ContainerInterface $container
      * @return Sampler
+     * @throws InvalidSampler when cannot resolve a sampler
      */
     private static function buildSampler(ContainerInterface $container)
     {
+        if (!$container->hasParameter('zipkin.sampler.type')) {
+            return BinarySampler::createAsAlwaysSample();
+        }
+
         $samplerType = $container->getParameter('zipkin.sampler.type');
 
         switch ($samplerType) {
+            case 'always':
+                return BinarySampler::createAsAlwaysSample();
             case 'never':
                 return BinarySampler::createAsNeverSample();
-                break;
             case 'path':
                 return $container->get('zipkin.sampler.path');
-                break;
             case 'route':
                 return $container->get('zipkin.sampler.route');
-                break;
             case 'percentage':
                 return PercentageSampler::create(
                     (float) $container->getParameter('zipkin.sampler.percentage')
                 );
-                break;
-            default:
-                return BinarySampler::createAsAlwaysSample();
-                break;
+            case 'custom':
+                $serviceId = $container->getParameter('zipkin.sampler.custom');
+                if (!$container->has($serviceId)) {
+                    throw InvalidSampler::forUnkownService($serviceId);
+                }
+
+                $sampler = $container->get($serviceId);
+                if ($sampler instanceof Sampler) {
+                    return $sampler;
+                }
+
+                throw InvalidSampler::forInvalidCustomSampler(get_class($sampler));
         }
+
+        throw InvalidSampler::forInvalidSamplerType($samplerType);
     }
 }

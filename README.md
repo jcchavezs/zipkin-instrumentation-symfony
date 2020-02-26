@@ -50,11 +50,9 @@ zipkin:
 
 ## Samplers
 
-Besides `always`, and `never` there are three other sampling strategies: **by path**, **by route** and 
-**by percentage**, however it is also possible yo use your own sampler.
+Besides `always`, and `never` there are three other sampling strategies: **by path**, **by route** and **by percentage**, however it is also possible yo use your own sampler.
 
-It is important to mention that the sampling decision is made on two situations: a) when a new trace
-is being started, b) when the extracted context does not include a sampling decision.
+It is important to mention that the sampling decision is made on two situations: a) when a new trace is being started, b) when the extracted context does not include a sampling decision.
 
 ### By path
 
@@ -105,8 +103,15 @@ zipkin:
 
 ### Custom samplers
 
-You can pass a custom sampler as long as it implements the `Zipkin\Sampler` interface.
-Check the [Custom Tracing](#custom-tracing) section for more details.
+You can pass a custom sampler as long as it implements the `Zipkin\Sampler` interface. You just need to use the service id declared in the service container.
+
+```yaml
+zipkin:
+  ...
+  sampler:
+    type: custom
+    custom: my_service_name
+```
 
 ## Reporters
 
