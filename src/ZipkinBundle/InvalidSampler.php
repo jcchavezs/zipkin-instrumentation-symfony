@@ -9,7 +9,7 @@ final class InvalidSampler extends RuntimeException
     /**
      * @param string $type
      */
-    public static function forInvalidSamplerType($type)
+    public static function forInvalidType($type)
     {
         return new self(
             sprintf('Unkown sampler type: "%s"', $type)

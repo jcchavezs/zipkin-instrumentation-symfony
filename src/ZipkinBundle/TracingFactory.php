@@ -118,6 +118,6 @@ final class TracingFactory
                 throw InvalidSampler::forInvalidCustomSampler(get_class($sampler));
         }
 
-        throw InvalidSampler::forInvalidSamplerType($samplerType);
+        throw InvalidSampler::forInvalidType($samplerType);
     }
 }
