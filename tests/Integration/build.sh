@@ -22,11 +22,13 @@ cat composer.json.dist \
 | jq '.scripts["pre-install-cmd"] = ["@sync"]' \
 | jq '.scripts["pre-update-cmd"] = ["@sync"]' \
 | jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "*"' \
-| jq '.repositories = [{"type": "path","url": "./.zipkin-instrumentation-symfony/","options": {"symlink": true}}]' > composer.json
+| jq '.repositories = [{"type": "path","url": "./.zipkin-instrumentation-symfony","options": {"symlink": true}}]' > composer.json
 
 cat composer.json
 
 rm composer.lock
+
+test -d .zipkin-instrumentation-symfony
 
 # web-server-bundle:4.4 supports ^3.4, ^4.0 and ^5.0 (see https://github.com/symfony/web-server-bundle/blob/4.4/composer.json#L23)
 ${COMPOSER_RUNNER} require symfony/web-server-bundle:4.4 --dev
