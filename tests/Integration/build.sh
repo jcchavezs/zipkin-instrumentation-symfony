@@ -29,8 +29,13 @@ cat composer.json
 
 rm composer.lock
 
-echo "Checking that zipkin-instrumentation-symfony has been symlinked"
+composer diagnose
+
+ls -la
+ls -la .zipkin-instrumentation-symfony
+
 test -d .zipkin-instrumentation-symfony
+[ "$(ls -A ./.zipkin-instrumentation-symfony)" ] && echo "Not Empty" || echo "Empty"
 
 echo "Installing web-server-bundle"
 # web-server-bundle:4.4 supports ^3.4, ^4.0 and ^5.0 (see https://github.com/symfony/web-server-bundle/blob/4.4/composer.json#L23)
