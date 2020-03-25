@@ -10,7 +10,7 @@ use Zipkin\Reporters\Log;
 use Zipkin\Reporters\Http;
 use Zipkin\Reporters\Noop;
 use Zipkin\TracingBuilder;
-use ZipkinBundle\InvalidSampler;
+use ZipkinBundle\Exceptions\InvalidSampler;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Samplers\PercentageSampler;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -26,12 +26,12 @@ final class TracingFactory
         $isNoop = (bool) $container->getParameter('zipkin.noop');
 
         return TracingBuilder::create()
-                ->havingLocalServiceName(self::buildServiceName($container))
-                ->havingSampler(self::buildSampler($container))
-                ->havingReporter(self::buildReporter($container))
-                ->havingLocalEndpoint(self::buildEndpoint($container))
-                ->beingNoop($isNoop)
-                ->build();
+            ->havingLocalServiceName(self::buildServiceName($container))
+            ->havingSampler(self::buildSampler($container))
+            ->havingReporter(self::buildReporter($container))
+            ->havingLocalEndpoint(self::buildEndpoint($container))
+            ->beingNoop($isNoop)
+            ->build();
     }
 
     /**

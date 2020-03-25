@@ -18,17 +18,24 @@ mv composer.json composer.json.dist
 cat composer.json.dist \
 | jq '. + {"minimum-stability": "dev"}' \
 | jq '. + {"prefer-stable": true}' \
-| jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=tests/Integration --exclude=composer.lock --exclude=vendor ../../../. .zipkin-instrumentation-symfony"]' \
+| jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=tests/Integration --exclude=composer.lock --exclude=vendor ../../../. ./.zipkin-instrumentation-symfony"]' \
 | jq '.scripts["pre-install-cmd"] = ["@sync"]' \
 | jq '.scripts["pre-update-cmd"] = ["@sync"]' \
 | jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "*"' \
-| jq '.repositories = [{"type": "path","url": "./.zipkin-instrumentation-symfony/","options": {"symlink": true}}]' > composer.json
+| jq '.repositories = [{"type": "path","url": "./.zipkin-instrumentation-symfony","options": {"symlink": true}}]' > composer.json
 
+echo "cat composer.json"
 cat composer.json
 
 rm composer.lock
 
-${COMPOSER_RUNNER} require symfony/web-server-bundle --dev
+# we need to create the zipkin-instrumentation-symfony on beforehand
+mkdir .zipkin-instrumentation-symfony
+touch .zipkin-instrumentation-symfony/.gitignore
+
+echo "Installing web-server-bundle"
+# web-server-bundle:4.4 supports ^3.4, ^4.0 and ^5.0 (see https://github.com/symfony/web-server-bundle/blob/4.4/composer.json#L23)
+${COMPOSER_RUNNER} require symfony/web-server-bundle:"^${SYMFONY_VERSION}|^4.4" --dev
 
 # includes configuration files to run the middleware in the app
 cp ../tracing.${SAMPLER}.yaml ./config/tracing.yaml
