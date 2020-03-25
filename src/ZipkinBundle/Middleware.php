@@ -3,20 +3,20 @@
 namespace ZipkinBundle;
 
 use Exception;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\Event\PostResponseEvent;
-use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Zipkin\Kind;
 use Zipkin\Tags;
-use Zipkin\Propagation\Map;
-use Zipkin\Propagation\TraceContext;
-use Zipkin\Propagation\SamplingFlags;
-use function Zipkin\Timestamp\now;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
+use Zipkin\Propagation\Map;
+use Psr\Log\LoggerInterface;
+use function Zipkin\Timestamp\now;
+use Zipkin\Propagation\TraceContext;
+use Zipkin\Propagation\SamplingFlags;
+use Symfony\Component\HttpKernel\Kernel;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 
 final class Middleware
 {
@@ -45,6 +45,9 @@ final class Middleware
      */
     private $spanCustomizers;
 
+    private $usesDeprecatedEvents = false;
+
+
     public function __construct(
         Tracing $tracing,
         LoggerInterface $logger,
@@ -55,12 +58,13 @@ final class Middleware
         $this->logger = $logger;
         $this->tags = $tags;
         $this->spanCustomizers = $spanCustomizers;
+        $this->usesDeprecatedEvents = (Kernel::VERSION[0] !== '5');
     }
 
     /**
-     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-request
+     * @see https://symfony.com/doc/4.4/reference/events.html#kernel-request
      */
-    public function onKernelRequest(GetResponseEvent $event)
+    public function onKernelRequest(KernelEvent $event)
     {
         if (!$event->isMasterRequest()) {
             return;
@@ -91,9 +95,9 @@ final class Middleware
     }
 
     /**
-     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-controller
+     * @see https://symfony.com/doc/4.4/reference/events.html#kernel-controller
      */
-    public function onKernelController(FilterControllerEvent $event)
+    public function onKernelController(KernelEvent $event)
     {
         if (!$event->isMasterRequest()) {
             return;
@@ -106,9 +110,9 @@ final class Middleware
     }
 
     /**
-     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-exception
+     * @see https://symfony.com/doc/4.4/reference/events.html#kernel-exception
      */
-    public function onKernelException(GetResponseForExceptionEvent $event)
+    public function onKernelException(RequestEvent $event)
     {
         if (!$event->isMasterRequest()) {
             return;
@@ -116,14 +120,26 @@ final class Middleware
 
         $span = $this->tracing->getTracer()->getCurrentSpan();
         if ($span !== null) {
-            $span->tag(Tags\ERROR, $event->getException()->getMessage());
+            if ($this->usesDeprecatedEvents) {
+                /**
+                 * @var GetResponseForExceptionEvent $event
+                 */
+                $errorMessage = $event->getException()->getMessage();
+            } else {
+                /**
+                 * @var ExceptionEvent $event
+                 */
+                $errorMessage = $event->getThrowable()->getMessage();
+            }
+
+            $span->tag(Tags\ERROR, $errorMessage);
         }
     }
 
     /**
-     * @see https://symfony.com/doc/3.4/reference/events.html#kernel-terminate
+     * @see https://symfony.com/doc/4.4/reference/events.html#kernel-terminate
      */
-    public function onKernelTerminate(PostResponseEvent $event)
+    public function onKernelTerminate(KernelEvent $event)
     {
         if (!$event->isMasterRequest()) {
             return;

@@ -1,6 +1,6 @@
 <?php
 
-namespace ZipkinBundle;
+namespace ZipkinBundle\Exceptions;
 
 use RuntimeException;
 

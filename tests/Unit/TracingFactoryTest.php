@@ -6,7 +6,7 @@ use Psr\Log\NullLogger;
 use PHPUnit_Framework_TestCase;
 use stdClass;
 use Zipkin\Tracing;
-use ZipkinBundle\InvalidSampler;
+use ZipkinBundle\Exceptions\InvalidSampler;
 use ZipkinBundle\TracingFactory;
 use Zipkin\Samplers\BinarySampler;
 use Symfony\Component\DependencyInjection\Container;
