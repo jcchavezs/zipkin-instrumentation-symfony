@@ -29,12 +29,12 @@ cat composer.json
 
 rm composer.lock
 
-composer diagnose
+composer sync
 
+pwd
 ls -la
 ls -la .zipkin-instrumentation-symfony
 
-test -d .zipkin-instrumentation-symfony
 [ "$(ls -A ./.zipkin-instrumentation-symfony)" ] && echo "Not Empty" || echo "Empty"
 
 echo "Installing web-server-bundle"
