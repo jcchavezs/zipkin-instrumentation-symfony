@@ -24,7 +24,7 @@ jobs:
       - run: wget --retry-connrefused -T 60 -O /dev/null http://127.0.0.1:9411/health
       # start both processes in the background, but don't use composer as it dies
       - run:
-          command: cd ./tests/Integration && make SYMFONY_VERSION=3.3 LIBRARY_BRANCH=${CIRCLE_BRANCH} COMPOSER_RUNNER="php -d memory_limit=-1 /home/circleci/openzipkin/composer.phar" build
+          command: cd ./tests/Integration && make SYMFONY_VERSION=3.4 LIBRARY_BRANCH=${CIRCLE_BRANCH} COMPOSER_RUNNER="php -d memory_limit=-1 /home/circleci/openzipkin/composer.phar" build
       - run:
           background: true
           command: php ./tests/Integration/test-app/bin/console server:run 8002
