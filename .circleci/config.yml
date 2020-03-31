@@ -72,7 +72,7 @@ jobs:
   symfony-5:
     docker:
       # node-browsers come with java pre-installed
-      - image: circleci/php:7.1-node-browsers
+      - image: circleci/php:7.2-node-browsers
     working_directory: ~/openzipkin
     steps:
       - checkout
@@ -109,3 +109,4 @@ workflows:
     jobs:
       - "symfony-3"
       - "symfony-4"
+      - "symfony-5"
