@@ -50,6 +50,7 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->end()
             ->scalarNode('percentage')->defaultValue(0.1)->end()
+            ->scalarNode('custom')->defaultValue('')->end()
             ->end()
             ->end()
             ->arrayNode('reporter')->addDefaultsIfNotSet()

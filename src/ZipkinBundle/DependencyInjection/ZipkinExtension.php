@@ -38,6 +38,11 @@ final class ZipkinExtension extends Extension
         );
 
         $container->setParameter(
+            'zipkin.sampler.custom',
+            $config['sampler']['custom']
+        );
+
+        $container->setParameter(
             'zipkin.sampler.route.included_routes',
             $config['sampler']['route']['included_routes']
         );

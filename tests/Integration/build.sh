@@ -40,6 +40,7 @@ ${COMPOSER_RUNNER} require symfony/web-server-bundle:"^${SYMFONY_VERSION}|^4.4" 
 # includes configuration files to run the middleware in the app
 cp ../tracing.${SAMPLER}.yaml ./config/tracing.yaml
 cp ../HealthController.php ./src/Controller
+mkdir ./src/Sampler && cp ../CustomSampler.php ./src/Sampler
 mv ./config/services.yaml ./config/services.yaml.dist
 echo "imports: [{ resource: tracing.yaml }]" > ./config/services.yaml
 cat ./config/services.yaml.dist >> ./config/services.yaml
