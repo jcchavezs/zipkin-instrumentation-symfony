@@ -7,7 +7,6 @@
 [![Total Downloads](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/downloads)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 [![License](https://poser.pugx.org/jcchavezs/zipkin-symfony/license)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 
-
 A Zipkin integration for Symfony applications
 
 ## Installation
@@ -103,7 +102,7 @@ zipkin:
 
 ### Custom samplers
 
-You can pass a custom sampler as long as it implements the `Zipkin\Sampler` interface. You just need to use the service id declared in the service container.
+You can pass a custom sampler as long as it implements the `Zipkin\Sampler` interface. You just need to use the service `id` declared in the service container.
 
 ```yaml
 zipkin:
@@ -148,7 +147,7 @@ services:
       - { name: kernel.event_listener, event: kernel.request, priority: 256 }
       - { name: kernel.event_listener, event: kernel.terminate }
       - { name: kernel.event_listener, event: kernel.exception }
-``` 
+```
 
 ## Custom Tracing
 
