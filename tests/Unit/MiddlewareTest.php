@@ -267,4 +267,42 @@ final class MiddlewareTest extends TestCase
         $this->assertCount(1, $spans);
         $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
     }
+
+    public function testSpanScopeIsClosedOnTerminate()
+    {
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->build();
+        $logger = new NullLogger();
+
+        $middleware = new Middleware($tracing, $logger);
+
+        $request = new Request();
+
+        $event = $this->prophesize(KernelEvent::class);
+        $event->isMasterRequest()->willReturn(true);
+        $event->getRequest()->willReturn($request);
+
+        $middleware->onKernelRequest($event->reveal());
+
+        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
+                $this->mockKernel(),
+                $request,
+                new Response()
+            );
+        } else {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
+                $this->mockKernel(),
+                $request,
+                new Response()
+            );
+        }
+
+        $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
+
+        $middleware->onKernelTerminate($responseEvent);
+
+        $this->assertNull($tracing->getTracer()->getCurrentSpan());
+    }
 }
