@@ -22,6 +22,13 @@
         timeoutForMediumTests="10"
         timeoutForLargeTests="60"
         verbose="false">
+    <testsuites>
+        <testsuite name="Test Suite">
+            <!-- functional tests -->
+            <directory>tests</directory>
+            <exclude>Integration/test-app</exclude>
+        </testsuite>
+    </testsuites>
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
             <directory suffix=".php">./src</directory>

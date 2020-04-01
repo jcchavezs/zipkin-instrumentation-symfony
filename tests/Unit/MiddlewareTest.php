@@ -3,6 +3,7 @@
 namespace ZipkinBundle\Tests\Unit;
 
 use Exception;
+use DG\BypassFinals;
 use Psr\Log\NullLogger;
 use Zipkin\TracingBuilder;
 use ZipkinBundle\Middleware;
@@ -11,9 +12,8 @@ use Zipkin\Samplers\BinarySampler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\KernelEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 
 class MiddlewareTest extends TestCase
 {
@@ -24,6 +24,11 @@ class MiddlewareTest extends TestCase
     const TAG_VALUE = 'value';
     const EXCEPTION_MESSAGE = 'message';
 
+    public function setUp()
+    {
+        BypassFinals::enable();
+    }
+
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
         $tracing = TracingBuilder::create()->build();
@@ -31,7 +36,7 @@ class MiddlewareTest extends TestCase
 
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
 
         $middleware->onKernelRequest($event->reveal());
@@ -56,7 +61,7 @@ class MiddlewareTest extends TestCase
             'HTTP_HOST' => self::HTTP_HOST,
         ]);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
@@ -82,15 +87,21 @@ class MiddlewareTest extends TestCase
 
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
 
-        $exceptionEvent = $this->prophesize(GetResponseForExceptionEvent::class);
+        if (class_exists('Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent')) {
+            $exceptionEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent::class);
+            $exceptionEvent->getException()->shouldNotBeCalled();
+        } else {
+            $exceptionEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\ExceptionEvent::class);
+            $exceptionEvent->getThrowable()->shouldNotBeCalled();
+        }
+
         $exceptionEvent->isMasterRequest()->willReturn(false);
-        $exceptionEvent->getException()->shouldNotBeCalled();
         $middleware->onKernelException($exceptionEvent->reveal());
     }
 
@@ -104,15 +115,21 @@ class MiddlewareTest extends TestCase
         $logger = new NullLogger();
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
 
-        $exceptionEvent = $this->prophesize(GetResponseForExceptionEvent::class);
+        if (class_exists('Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent')) {
+            $exceptionEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent::class);
+            $exceptionEvent->getException()->shouldBeCalled()->willReturn(new Exception(self::EXCEPTION_MESSAGE));
+        } else {
+            $exceptionEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\ExceptionEvent::class);
+            $exceptionEvent->getThrowable()->shouldBeCalled()->willReturn(new Exception(self::EXCEPTION_MESSAGE));
+        }
+
         $exceptionEvent->isMasterRequest()->willReturn(true);
-        $exceptionEvent->getException()->shouldBeCalled()->willReturn(new Exception(self::EXCEPTION_MESSAGE));
         $middleware->onKernelException($exceptionEvent->reveal());
 
         $tracing->getTracer()->flush();
@@ -132,13 +149,18 @@ class MiddlewareTest extends TestCase
 
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
 
-        $responseEvent = $this->prophesize(PostResponseEvent::class);
+        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
+            $responseEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\PostResponseEvent::class);
+        } else {
+            $responseEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\TerminateEvent::class);
+        }
+
         $responseEvent->isMasterRequest()->willReturn(false);
         $responseEvent->getRequest()->shouldNotBeCalled();
         $middleware->onKernelTerminate($responseEvent->reveal());
@@ -174,17 +196,22 @@ class MiddlewareTest extends TestCase
             'HTTP_HOST' => self::HTTP_HOST,
         ]);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());
 
-        $exceptionEvent = $this->prophesize(PostResponseEvent::class);
-        $exceptionEvent->isMasterRequest()->willReturn(true);
-        $exceptionEvent->getRequest()->shouldBeCalled()->willReturn($request);
-        $exceptionEvent->getResponse()->shouldBeCalled()->willReturn(new Response('', $responseStatusCode));
-        $middleware->onKernelTerminate($exceptionEvent->reveal());
+        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
+            $responseEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\PostResponseEvent::class);
+        } else {
+            $responseEvent = $this->prophesize(\Symfony\Component\HttpKernel\Event\TerminateEvent::class);
+        }
+
+        $responseEvent->isMasterRequest()->willReturn(true);
+        $responseEvent->getRequest()->shouldBeCalled()->willReturn($request);
+        $responseEvent->getResponse()->shouldBeCalled()->willReturn(new Response('', $responseStatusCode));
+        $middleware->onKernelTerminate($responseEvent->reveal());
 
         $assertTags = [
             'http.host' => self::HTTP_HOST,
