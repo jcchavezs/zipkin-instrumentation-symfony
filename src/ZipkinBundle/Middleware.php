@@ -15,8 +15,6 @@ use Zipkin\Propagation\SamplingFlags;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 
 final class Middleware
 {
@@ -112,7 +110,7 @@ final class Middleware
     /**
      * @see https://symfony.com/doc/4.4/reference/events.html#kernel-exception
      */
-    public function onKernelException(RequestEvent $event)
+    public function onKernelException(KernelEvent $event)
     {
         if (!$event->isMasterRequest()) {
             return;
@@ -122,12 +120,12 @@ final class Middleware
         if ($span !== null) {
             if ($this->usesDeprecatedEvents) {
                 /**
-                 * @var GetResponseForExceptionEvent $event
+                 * @var Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
                  */
                 $errorMessage = $event->getException()->getMessage();
             } else {
                 /**
-                 * @var ExceptionEvent $event
+                 * @var Symfony\Component\HttpKernel\Event\ExceptionEvent $event
                  */
                 $errorMessage = $event->getThrowable()->getMessage();
             }
