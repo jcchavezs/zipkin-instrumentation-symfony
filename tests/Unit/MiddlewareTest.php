@@ -11,11 +11,10 @@ use Zipkin\Samplers\BinarySampler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\Event\PostResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
+use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
-class MiddlewareTest extends TestCase
+final class MiddlewareTest extends TestCase
 {
     const HTTP_HOST = 'localhost';
     const HTTP_METHOD = 'OPTIONS';
@@ -31,7 +30,7 @@ class MiddlewareTest extends TestCase
 
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
 
         $middleware->onKernelRequest($event->reveal());
@@ -56,7 +55,7 @@ class MiddlewareTest extends TestCase
             'HTTP_HOST' => self::HTTP_HOST,
         ]);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
@@ -75,23 +74,49 @@ class MiddlewareTest extends TestCase
         ], $spans[0]->toArray());
     }
 
+    private function mockKernel()
+    {
+        return $this->prophesize(HttpKernelInterface::class)->reveal();
+    }
+
     public function testNoSpanIsTaggedOnKernelExceptionIfItIsNotStarted()
     {
-        $tracing = TracingBuilder::create()->build();
+        $reporter = new InMemoryReporter();
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->havingReporter($reporter)
+            ->build();
         $logger = new NullLogger();
 
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
 
-        $exceptionEvent = $this->prophesize(GetResponseForExceptionEvent::class);
-        $exceptionEvent->isMasterRequest()->willReturn(false);
-        $exceptionEvent->getException()->shouldNotBeCalled();
-        $middleware->onKernelException($exceptionEvent->reveal());
+        if (class_exists('Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent')) {
+            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent(
+                $this->mockKernel(),
+                new Request(),
+                HttpKernelInterface::SUB_REQUEST, // isMasterRequest will be false
+                new Exception()
+            );
+        } else {
+            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\ExceptionEvent(
+                $this->mockKernel(),
+                new Request(),
+                HttpKernelInterface::SUB_REQUEST, // isMasterRequest will be false
+                new Exception()
+            );
+        }
+
+        $middleware->onKernelException($exceptionEvent);
+
+        $tracing->getTracer()->flush();
+        $spans = $reporter->flush();
+        $this->assertCount(0, $spans);
     }
 
     public function testSpanIsTaggedOnKernelException()
@@ -104,16 +129,29 @@ class MiddlewareTest extends TestCase
         $logger = new NullLogger();
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
 
-        $exceptionEvent = $this->prophesize(GetResponseForExceptionEvent::class);
-        $exceptionEvent->isMasterRequest()->willReturn(true);
-        $exceptionEvent->getException()->shouldBeCalled()->willReturn(new Exception(self::EXCEPTION_MESSAGE));
-        $middleware->onKernelException($exceptionEvent->reveal());
+        if (class_exists('Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent')) {
+            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent(
+                $this->mockKernel(),
+                new Request(),
+                HttpKernelInterface::MASTER_REQUEST, // isMasterRequest will be true
+                new Exception(self::EXCEPTION_MESSAGE)
+            );
+        } else {
+            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\ExceptionEvent(
+                $this->mockKernel(),
+                new Request(),
+                HttpKernelInterface::MASTER_REQUEST, // isMasterRequest will be true
+                new Exception(self::EXCEPTION_MESSAGE)
+            );
+        }
+
+        $middleware->onKernelException($exceptionEvent);
 
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
@@ -127,21 +165,38 @@ class MiddlewareTest extends TestCase
 
     public function testNoSpanIsTaggedOnKernelTerminateIfItIsNotStarted()
     {
-        $tracing = TracingBuilder::create()->build();
+        $reporter = new InMemoryReporter();
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->havingReporter($reporter)
+            ->build();
         $logger = new NullLogger();
 
         $middleware = new Middleware($tracing, $logger);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
 
-        $responseEvent = $this->prophesize(PostResponseEvent::class);
-        $responseEvent->isMasterRequest()->willReturn(false);
-        $responseEvent->getRequest()->shouldNotBeCalled();
-        $middleware->onKernelTerminate($responseEvent->reveal());
+        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
+                $this->mockKernel(),
+                new Request(),
+                new Response()
+            );
+        } else {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
+                $this->mockKernel(),
+                new Request(),
+                new Response()
+            );
+        }
+
+        $middleware->onKernelTerminate($responseEvent);
+        $spans = $reporter->flush();
+        $this->assertCount(0, $spans);
     }
 
     public function statusCodeProvider()
@@ -174,17 +229,27 @@ class MiddlewareTest extends TestCase
             'HTTP_HOST' => self::HTTP_HOST,
         ]);
 
-        $event = $this->prophesize(GetResponseEvent::class);
+        $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());
 
-        $exceptionEvent = $this->prophesize(PostResponseEvent::class);
-        $exceptionEvent->isMasterRequest()->willReturn(true);
-        $exceptionEvent->getRequest()->shouldBeCalled()->willReturn($request);
-        $exceptionEvent->getResponse()->shouldBeCalled()->willReturn(new Response('', $responseStatusCode));
-        $middleware->onKernelTerminate($exceptionEvent->reveal());
+        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
+                $this->mockKernel(),
+                $request,
+                new Response('', $responseStatusCode)
+            );
+        } else {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
+                $this->mockKernel(),
+                $request,
+                new Response('', $responseStatusCode)
+            );
+        }
+
+        $middleware->onKernelTerminate($responseEvent);
 
         $assertTags = [
             'http.host' => self::HTTP_HOST,

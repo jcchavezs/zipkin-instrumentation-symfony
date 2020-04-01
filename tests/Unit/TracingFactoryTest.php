@@ -55,7 +55,7 @@ final class TracingFactoryTest extends TestCase
 
         $container = new Container($parameterBag);
         $container->set('logger', new NullLogger());
-        $this->setExpectedException(InvalidSampler::class, 'Unknown service with id: "my_service"');
+        $this->expectException(InvalidSampler::class, 'Unknown service with id: "my_service"');
         TracingFactory::build($container);
     }
 
@@ -69,7 +69,7 @@ final class TracingFactoryTest extends TestCase
         $container = new Container($parameterBag);
         $container->set('logger', new NullLogger());
         $container->set('my_service', new stdClass());
-        $this->setExpectedException(InvalidSampler::class, 'Object of class "stdClass" is not a valid sampler');
+        $this->expectException(InvalidSampler::class, 'Object of class "stdClass" is not a valid sampler');
         TracingFactory::build($container);
     }
 
