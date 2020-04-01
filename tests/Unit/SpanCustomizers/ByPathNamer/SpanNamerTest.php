@@ -2,14 +2,13 @@
 
 namespace ZipkinBundle\Tests\Unit\SpanCustomizers\ByPathNamer;
 
-use PHPUnit_Framework_TestCase;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Zipkin\Span;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
 use ZipkinBundle\SpanCustomizers\ByPathNamer\CacheWarmer;
 use ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer;
 
-final class SpanNamerTest extends PHPUnit_Framework_TestCase
+final class SpanNamerTest extends TestCase
 {
     const ROUTE_NAME = 'route';
     const ROUTE_PATH = '/path';

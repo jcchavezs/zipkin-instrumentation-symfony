@@ -2,12 +2,12 @@
 
 namespace ZipkinBundle\Tests\Unit\Samplers;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
+use ZipkinBundle\Samplers\RouteSampler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
-use ZipkinBundle\Samplers\RouteSampler;
 
-final class RouteSamplerTest extends PHPUnit_Framework_TestCase
+final class RouteSamplerTest extends TestCase
 {
     const TEST_ROUTE = 'my_route';
 

@@ -3,19 +3,19 @@
 namespace ZipkinBundle\Tests\Unit;
 
 use Exception;
-use PHPUnit_Framework_TestCase;
 use Psr\Log\NullLogger;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
-use Symfony\Component\HttpKernel\Event\PostResponseEvent;
-use Zipkin\Samplers\BinarySampler;
 use Zipkin\TracingBuilder;
 use ZipkinBundle\Middleware;
+use PHPUnit\Framework\TestCase;
+use Zipkin\Samplers\BinarySampler;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
+use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\PostResponseEvent;
+use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 
-class MiddlewareTest extends PHPUnit_Framework_TestCase
+class MiddlewareTest extends TestCase
 {
     const HTTP_HOST = 'localhost';
     const HTTP_METHOD = 'OPTIONS';
