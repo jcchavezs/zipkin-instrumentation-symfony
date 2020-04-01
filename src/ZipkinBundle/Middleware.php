@@ -18,6 +18,8 @@ use Symfony\Component\HttpKernel\Event\KernelEvent;
 
 final class Middleware
 {
+    const SPAN_CLOSER_KEY = 'zipkin_bundle_span_closer';
+
     /**
      * @var Tracing
      */
@@ -29,11 +31,6 @@ final class Middleware
     private $logger;
 
     /**
-     * @var callable
-     */
-    private $scopeCloser;
-
-    /**
      * @var array
      */
     private $tags;
@@ -43,8 +40,10 @@ final class Middleware
      */
     private $spanCustomizers;
 
+    /**
+     * @var bool
+     */
     private $usesDeprecatedEvents = false;
-
 
     public function __construct(
         Tracing $tracing,
@@ -56,7 +55,7 @@ final class Middleware
         $this->logger = $logger;
         $this->tags = $tags;
         $this->spanCustomizers = $spanCustomizers;
-        $this->usesDeprecatedEvents = (Kernel::VERSION[0] !== '5');
+        $this->usesDeprecatedEvents = (Kernel::VERSION[0] === '3');
     }
 
     /**
@@ -89,7 +88,7 @@ final class Middleware
             $span->tag($key, $value);
         }
 
-        $this->scopeCloser = $this->tracing->getTracer()->openScope($span);
+        $request->attributes->set(self::SPAN_CLOSER_KEY, $this->tracing->getTracer()->openScope($span));
     }
 
     /**
@@ -163,7 +162,10 @@ final class Middleware
         $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
         $span->finish();
 
-        call_user_func($this->scopeCloser);
+        $scopeCloser = $request->attributes->get(self::SPAN_CLOSER_KEY);
+        if ($scopeCloser !== null) {
+            $scopeCloser();
+        }
 
         $this->flushTracer();
     }
