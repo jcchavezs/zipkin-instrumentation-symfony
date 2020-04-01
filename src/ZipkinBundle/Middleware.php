@@ -139,10 +139,6 @@ final class Middleware
      */
     public function onKernelTerminate(KernelEvent $event)
     {
-        if (!$event->isMasterRequest()) {
-            return;
-        }
-
         $request = $event->getRequest();
 
         $span = $this->tracing->getTracer()->getCurrentSpan();

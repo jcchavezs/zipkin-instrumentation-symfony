@@ -14,8 +14,8 @@ jobs:
       env: SYMFONY_VERSION=4.4
 
 install:
-  - composer install
   - composer require symfony/config:"^$SYMFONY_VERSION" symfony/http-kernel:"^$SYMFONY_VERSION" symfony/routing:"^$SYMFONY_VERSION" symfony/dependency-injection:"^$SYMFONY_VERSION"
+  - composer install
 
 script:
   - composer lint

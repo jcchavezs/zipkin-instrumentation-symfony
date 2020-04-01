@@ -2,12 +2,12 @@
 
 namespace ZipkinBundle\Tests\Unit\Samplers;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
+use ZipkinBundle\Samplers\PathSampler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
-use ZipkinBundle\Samplers\PathSampler;
 
-final class PathSamplerTest extends PHPUnit_Framework_TestCase
+final class PathSamplerTest extends TestCase
 {
     const TEST_PATH = '/my/route/123456';
     const TEST_PATH_REGEX = '/my/route/[0-9]{6}';

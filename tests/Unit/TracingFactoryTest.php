@@ -2,17 +2,17 @@
 
 namespace ZipkinBundle\Tests\Unit;
 
-use Psr\Log\NullLogger;
-use PHPUnit_Framework_TestCase;
 use stdClass;
 use Zipkin\Tracing;
-use ZipkinBundle\Exceptions\InvalidSampler;
+use Psr\Log\NullLogger;
+use PHPUnit\Framework\TestCase;
 use ZipkinBundle\TracingFactory;
 use Zipkin\Samplers\BinarySampler;
+use ZipkinBundle\Exceptions\InvalidSampler;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 
-final class TracingFactoryTest extends PHPUnit_Framework_TestCase
+final class TracingFactoryTest extends TestCase
 {
     const DEFAULT_PARAMETER_BAG = [
         'zipkin.noop' => false,
@@ -55,7 +55,7 @@ final class TracingFactoryTest extends PHPUnit_Framework_TestCase
 
         $container = new Container($parameterBag);
         $container->set('logger', new NullLogger());
-        $this->setExpectedException(InvalidSampler::class, 'Unknown service with id: "my_service"');
+        $this->expectException(InvalidSampler::class, 'Unknown service with id: "my_service"');
         TracingFactory::build($container);
     }
 
@@ -69,7 +69,7 @@ final class TracingFactoryTest extends PHPUnit_Framework_TestCase
         $container = new Container($parameterBag);
         $container->set('logger', new NullLogger());
         $container->set('my_service', new stdClass());
-        $this->setExpectedException(InvalidSampler::class, 'Object of class "stdClass" is not a valid sampler');
+        $this->expectException(InvalidSampler::class, 'Object of class "stdClass" is not a valid sampler');
         TracingFactory::build($container);
     }
 
