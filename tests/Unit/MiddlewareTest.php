@@ -364,7 +364,8 @@ final class MiddlewareTest extends TestCase
             $assertTags['error'] = (string) $responseStatusCode;
         }
 
-        $tracing->getTracer()->flush();
+        // There is no need to to `Tracer::flush` here as `onKernelTerminate` does
+        // it already.
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
         $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
