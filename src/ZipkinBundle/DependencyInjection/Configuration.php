@@ -10,7 +10,7 @@ final class Configuration implements ConfigurationInterface
 {
     public function getConfigTreeBuilder()
     {
-        if (Kernel::VERSION[0] == '5') {
+        if (Kernel::VERSION[0] === '5') {
             $treeBuilder = new TreeBuilder('zipkin');
             $rootNode = $treeBuilder->getRootNode();
         } else {

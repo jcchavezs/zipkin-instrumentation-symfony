@@ -15,15 +15,21 @@ use Zipkin\Propagation\SamplingFlags;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 
 final class Middleware
 {
     const SPAN_CLOSER_KEY = 'zipkin_bundle_span_closer';
 
     /**
-     * @var Tracing
+     * @var Tracer
      */
-    private $tracing;
+    private $tracer;
+
+    /**
+     * @var callable
+     */
+    private $extractor;
 
     /**
      * @var LoggerInterface
@@ -43,7 +49,7 @@ final class Middleware
     /**
      * @var bool
      */
-    private $usesDeprecatedEvents = false;
+    private $usesDeprecatedEvents;
 
     public function __construct(
         Tracing $tracing,
@@ -51,7 +57,8 @@ final class Middleware
         array $tags = [],
         SpanCustomizer ...$spanCustomizers
     ) {
-        $this->tracing = $tracing;
+        $this->tracer = $tracing->getTracer();
+        $this->extractor = $tracing->getPropagation()->getExtractor(new Map());
         $this->logger = $logger;
         $this->tags = $tags;
         $this->spanCustomizers = $spanCustomizers;
@@ -77,7 +84,7 @@ final class Middleware
             return;
         }
 
-        $span = $this->tracing->getTracer()->nextSpan($spanContext);
+        $span = $this->tracer->nextSpan($spanContext);
         $span->start();
         $span->setName($request->getMethod());
         $span->setKind(Kind\SERVER);
@@ -88,7 +95,7 @@ final class Middleware
             $span->tag($key, $value);
         }
 
-        $request->attributes->set(self::SPAN_CLOSER_KEY, $this->tracing->getTracer()->openScope($span));
+        $request->attributes->set(self::SPAN_CLOSER_KEY, $this->tracer->openScope($span));
     }
 
     /**
@@ -100,7 +107,7 @@ final class Middleware
             return;
         }
 
-        $span = $this->tracing->getTracer()->getCurrentSpan();
+        $span = $this->tracer->getCurrentSpan();
         if ($span !== null) {
             $span->annotate('symfony.kernel.controller', now());
         }
@@ -115,22 +122,43 @@ final class Middleware
             return;
         }
 
-        $span = $this->tracing->getTracer()->getCurrentSpan();
-        if ($span !== null) {
-            if ($this->usesDeprecatedEvents) {
-                /**
-                 * @var Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
-                 */
-                $errorMessage = $event->getException()->getMessage();
-            } else {
-                /**
-                 * @var Symfony\Component\HttpKernel\Event\ExceptionEvent $event
-                 */
-                $errorMessage = $event->getThrowable()->getMessage();
-            }
-
-            $span->tag(Tags\ERROR, $errorMessage);
+        $span = $this->tracer->getCurrentSpan();
+        if ($span === null) {
+            return;
         }
+
+        if ($this->usesDeprecatedEvents) {
+            /**
+             * @var \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
+             */
+            $errorMessage = $event->getException()->getMessage();
+        } else {
+            /**
+             * @var \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
+             */
+            $errorMessage = $event->getThrowable()->getMessage();
+        }
+
+        $span->tag(Tags\ERROR, $errorMessage);
+        $this->finishSpan($event->getRequest(), null);
+    }
+
+    /**
+     * @see https://symfony.com/doc/4.4/reference/events.html#kernel-response
+     */
+    public function onKernelResponse(KernelEvent $event)
+    {
+        if ($this->usesDeprecatedEvents) {
+            /**
+             * @var \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+             */
+        } else {
+            /**
+             * @var \Symfony\Component\HttpKernel\Event\ResponseEvent $event
+             */
+        }
+
+        $this->finishSpan($event->getRequest(), $event->getResponse());
     }
 
     /**
@@ -138,9 +166,35 @@ final class Middleware
      */
     public function onKernelTerminate(KernelEvent $event)
     {
-        $request = $event->getRequest();
+        // Previously, the onKernelResponse listener did not exist in this class
+        // and hence we finished the span and closed the scope on terminate.
+        // However, terminate happens after the response have been sent and it could
+        // happen that span is being finished after some other processing attached by
+        // the user. onKernelResponse is the right place to finish the span but in order
+        // to not to break existing user relaying on the onKernelTerminate to finish
+        // the span we add this temporary fix.
 
-        $span = $this->tracing->getTracer()->getCurrentSpan();
+        $scopeCloser = $event->getRequest()->attributes->get(self::SPAN_CLOSER_KEY);
+        if ($scopeCloser !== null) {
+            if ($this->usesDeprecatedEvents) {
+                /**
+                 * @var \Symfony\Component\HttpKernel\Event\PostResponseEvent $event
+                 */
+            } else {
+                /**
+                 * @var \Symfony\Component\HttpKernel\Event\TerminateEvent $event
+                 */
+            }
+
+            $this->finishSpan($event->getRequest(), $event->getResponse());
+        }
+
+        $this->flushTracer();
+    }
+
+    private function finishSpan(Request $request, $response)
+    {
+        $span = $this->tracer->getCurrentSpan();
         if ($span === null) {
             return;
         }
@@ -154,20 +208,19 @@ final class Middleware
             $span->tag('symfony.route', $routeName);
         }
 
-        $statusCode = $event->getResponse()->getStatusCode();
-        if ($statusCode > 399) {
-            $span->tag(Tags\ERROR, (string) $statusCode);
+        if ($response != null) {
+            $statusCode = $response->getStatusCode();
+            if ($statusCode > 399) {
+                $span->tag(Tags\ERROR, (string) $statusCode);
+            }
+            $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
         }
 
-        $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
         $span->finish();
-
         $scopeCloser = $request->attributes->get(self::SPAN_CLOSER_KEY);
         if ($scopeCloser !== null) {
             $scopeCloser();
         }
-
-        $this->flushTracer();
     }
 
     /**
@@ -176,9 +229,7 @@ final class Middleware
      */
     private function extractContextFromRequest(Request $request)
     {
-        $extractor = $this->tracing->getPropagation()->getExtractor(new Map());
-
-        return $extractor(array_map(
+        return ($this->extractor)(array_map(
             function ($values) {
                 return $values[0];
             },
@@ -188,12 +239,10 @@ final class Middleware
 
     private function flushTracer()
     {
-        register_shutdown_function(function (Tracer $tracer, LoggerInterface $logger) {
-            try {
-                $tracer->flush();
-            } catch (Exception $e) {
-                $logger->error($e->getMessage());
-            }
-        }, $this->tracing->getTracer(), $this->logger);
+        try {
+            $this->tracer->flush();
+        } catch (Exception $e) {
+            $this->logger->error($e->getMessage());
+        }
     }
 }
