@@ -2,10 +2,10 @@
 
 [![Build Status](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony.svg?branch=master)](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony)
 [![CircleCI](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master.svg?style=svg)](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master)
-[![Latest Stable Version](https://poser.pugx.org/jcchavezs/zipkin-symfony/v/stable)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
+[![Latest Stable Version](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/v/stable)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 [![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%205.6-8892BF.svg)](https://php.net/)
 [![Total Downloads](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/downloads)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
-[![License](https://poser.pugx.org/jcchavezs/zipkin-symfony/license)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
+[![License](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/license)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 
 A Zipkin integration for Symfony applications
 
@@ -212,7 +212,7 @@ services:
 
 ## Contributing
 
-All contribution and feedback are welcome.
+All contributions and feedback are welcome.
 
 ### Unit testing
 
@@ -228,7 +228,7 @@ On every build we run a end to end (E2E) test against a symfony application.
 This test run in our CI tests but it can be also reproduced in local by:
 
 1. Go to `tests/Integration`
-2. Run `make SYMFONY_VERSION={{SYMFONY_VERSION}} build` to build the test application (by default newest version) 
+2. Run `SYMFONY_VERSION={{SYMFONY_VERSION}} make build` to build the test application (by default newest version)
 3. Run `make run-zipkin` to start zipkin sever
 4. Run `make run-app` to start the test application
 5. Hit the application `curl -i http://localhost:8002/_health`

@@ -15,11 +15,10 @@ use Zipkin\Propagation\SamplingFlags;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
-use Symfony\Component\HttpKernel\Event\ResponseEvent;
 
 final class Middleware
 {
-    const SPAN_CLOSER_KEY = 'zipkin_bundle_span_closer';
+    const SCOPE_CLOSER_KEY = 'zipkin_bundle_scope_closer';
 
     /**
      * @var Tracer
@@ -95,7 +94,7 @@ final class Middleware
             $span->tag($key, $value);
         }
 
-        $request->attributes->set(self::SPAN_CLOSER_KEY, $this->tracer->openScope($span));
+        $request->attributes->set(self::SCOPE_CLOSER_KEY, $this->tracer->openScope($span));
     }
 
     /**
@@ -167,14 +166,14 @@ final class Middleware
     public function onKernelTerminate(KernelEvent $event)
     {
         // Previously, the onKernelResponse listener did not exist in this class
-        // and hence we finished the span and closed the scope on terminate.
-        // However, terminate happens after the response have been sent and it could
-        // happen that span is being finished after some other processing attached by
-        // the user. onKernelResponse is the right place to finish the span but in order
-        // to not to break existing user relaying on the onKernelTerminate to finish
-        // the span we add this temporary fix.
+        // and hence we finished the span and closed the scope on the onKernelTerminate.
+        // However, terminate occurs after the response has been sent and it could
+        // happen that span is being finished after some other processing (potentially
+        // expensive) attached by the user. onKernelResponse is the right place to finish
+        // the span but in order to not to break existing user relaying on the
+        // onKernelTerminate to finish the span we add this temporary fix.
 
-        $scopeCloser = $event->getRequest()->attributes->get(self::SPAN_CLOSER_KEY);
+        $scopeCloser = $event->getRequest()->attributes->get(self::SCOPE_CLOSER_KEY);
         if ($scopeCloser !== null) {
             if ($this->usesDeprecatedEvents) {
                 /**
@@ -217,9 +216,11 @@ final class Middleware
         }
 
         $span->finish();
-        $scopeCloser = $request->attributes->get(self::SPAN_CLOSER_KEY);
+        $scopeCloser = $request->attributes->get(self::SCOPE_CLOSER_KEY);
         if ($scopeCloser !== null) {
             $scopeCloser();
+            // We reset the scope closer as it did its job
+            $request->attributes->remove(self::SCOPE_CLOSER_KEY);
         }
     }
 
