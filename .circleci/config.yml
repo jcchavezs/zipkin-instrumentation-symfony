@@ -33,6 +33,7 @@ jobs:
           # wait just in case
           sleep 1
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          test $(curl -s 127.0.0.1:9411/api/v2/traces | jq -c '.[0].tags.error') = "null"
           exit $?
 
   symfony-4:
@@ -67,6 +68,7 @@ jobs:
           # wait just in case
           sleep 1
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          test $(curl -s 127.0.0.1:9411/api/v2/traces | jq -c '.[0].tags.error') = "null"
           exit $?
 
   symfony-5:
@@ -101,6 +103,7 @@ jobs:
           # wait just in case
           sleep 1
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          test $(curl -s 127.0.0.1:9411/api/v2/traces | jq -c '.[0].tags.error') = "null"
           exit $?
 
 workflows:
