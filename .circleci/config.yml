@@ -32,7 +32,9 @@ jobs:
       - run: |
           # wait just in case
           sleep 1
+          # makes sure we get one trace
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          # makes sure the trace does not contain errors
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq -c '.[0][0].tags.error') = "null"
           exit $?
 
@@ -67,7 +69,9 @@ jobs:
       - run: |
           # wait just in case
           sleep 1
+          # makes sure we get one trace
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          # makes sure the trace does not contain errors
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq -c '.[0][0].tags.error') = "null"
           exit $?
 
@@ -102,7 +106,9 @@ jobs:
       - run: |
           # wait just in case
           sleep 1
+          # makes sure we get one trace
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq '.[0] | length') -eq 1
+          # makes sure the trace does not contain errors
           test $(curl -s 127.0.0.1:9411/api/v2/traces | jq -c '.[0][0].tags.error') = "null"
           exit $?
 
