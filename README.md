@@ -30,9 +30,10 @@ services:
       - "@zipkin.default_tracing"
       - "@logger"
     tags:
-      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
-      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
+      - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
       - { name: kernel.event_listener, event: kernel.exception }
+      - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
 `@zipkin.default_tracing` is a `Zipkin\DefaultTracing` instance which is being 
@@ -144,9 +145,10 @@ services:
       - "@logger"
       - { instance: %instance_name% }
     tags:
-      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
-      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
+      - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
       - { name: kernel.event_listener, event: kernel.exception }
+      - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
 ## Custom Tracing
@@ -163,9 +165,10 @@ services:
       - "@my_own_tracing"
       - "@logger"
     tags:
-      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
-      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
+      - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
       - { name: kernel.event_listener, event: kernel.exception }
+      - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
 ## Span customizers
@@ -201,9 +204,10 @@ services:
       - { instance: %instance_name% }
       - "@zipkin.span_customizer.by_path_namer"
     tags:
-      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
-      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
+      - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
       - { name: kernel.event_listener, event: kernel.exception }
+      - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
 ## Contributing

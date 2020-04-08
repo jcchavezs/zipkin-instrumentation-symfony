@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
 
 final class MiddlewareTest extends TestCase
 {
@@ -181,20 +182,20 @@ final class MiddlewareTest extends TestCase
         $middleware->onKernelRequest($event->reveal());
 
         if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
+            $terminateEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
                 $this->mockKernel(),
                 new Request(),
                 new Response()
             );
         } else {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
+            $terminateEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
                 $this->mockKernel(),
                 new Request(),
                 new Response()
             );
         }
 
-        $middleware->onKernelTerminate($responseEvent);
+        $middleware->onKernelTerminate($terminateEvent);
         $spans = $reporter->flush();
         $this->assertCount(0, $spans);
     }
@@ -207,6 +208,107 @@ final class MiddlewareTest extends TestCase
             [400],
             [500]
         ];
+    }
+
+    /**
+     * @dataProvider statusCodeProvider
+     */
+    public function testSpanIsTaggedOnKernelResponse($responseStatusCode)
+    {
+        $reporter = new InMemoryReporter();
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->havingReporter($reporter)
+            ->build();
+        $logger = new NullLogger();
+
+        $middleware = new Middleware($tracing, $logger);
+
+        $request = new Request([], [], [], [], [], [
+            'REQUEST_METHOD' => self::HTTP_METHOD,
+            'REQUEST_URI' => self::HTTP_PATH,
+            'HTTP_HOST' => self::HTTP_HOST,
+        ]);
+
+        $event = $this->prophesize(KernelEvent::class);
+        $event->isMasterRequest()->willReturn(true);
+        $event->getRequest()->willReturn($request);
+
+        $middleware->onKernelRequest($event->reveal());
+
+        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\FilterResponseEvent(
+                $this->mockKernel(),
+                $request,
+                KernelInterface::MASTER_REQUEST,
+                new Response('', $responseStatusCode)
+            );
+        } else {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\ResponseEvent(
+                $this->mockKernel(),
+                $request,
+                KernelInterface::MASTER_REQUEST,
+                new Response('', $responseStatusCode)
+            );
+        }
+
+        $middleware->onKernelResponse($responseEvent);
+
+        $assertTags = [
+            'http.host' => self::HTTP_HOST,
+            'http.method' => self::HTTP_METHOD,
+            'http.path' => self::HTTP_PATH,
+            'http.status_code' => (string) $responseStatusCode,
+        ];
+
+        if ($responseStatusCode > 399) {
+            $assertTags['error'] = (string) $responseStatusCode;
+        }
+
+        $tracing->getTracer()->flush();
+        $spans = $reporter->flush();
+        $this->assertCount(1, $spans);
+        $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
+    }
+
+    public function testSpanScopeIsClosedOnResponse()
+    {
+        $tracing = TracingBuilder::create()
+            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->build();
+        $logger = new NullLogger();
+
+        $middleware = new Middleware($tracing, $logger);
+
+        $request = new Request();
+
+        $event = $this->prophesize(KernelEvent::class);
+        $event->isMasterRequest()->willReturn(true);
+        $event->getRequest()->willReturn($request);
+
+        $middleware->onKernelRequest($event->reveal());
+
+        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\FilterResponseEvent(
+                $this->mockKernel(),
+                $request,
+                KernelInterface::MASTER_REQUEST,
+                new Response()
+            );
+        } else {
+            $responseEvent = new \Symfony\Component\HttpKernel\Event\ResponseEvent(
+                $this->mockKernel(),
+                $request,
+                KernelInterface::MASTER_REQUEST,
+                new Response()
+            );
+        }
+
+        $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
+
+        $middleware->onKernelResponse($responseEvent);
+
+        $this->assertNull($tracing->getTracer()->getCurrentSpan());
     }
 
     /**
@@ -262,7 +364,8 @@ final class MiddlewareTest extends TestCase
             $assertTags['error'] = (string) $responseStatusCode;
         }
 
-        $tracing->getTracer()->flush();
+        // There is no need to to `Tracer::flush` here as `onKernelTerminate` does
+        // it already.
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
         $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());

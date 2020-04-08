@@ -14,7 +14,7 @@ zipkin:
 services:
   zipkin.span_namer.route:
     class: ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer
-    factory: [ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer, 'create']
+    factory: [ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer, "create"]
     arguments:
       - "%kernel.cache_dir%"
 
@@ -33,6 +33,7 @@ services:
       - { "version": "xxx" }
       - "@zipkin.span_namer.route"
     tags:
-      - { name: kernel.event_listener, event: kernel.request, priority: 256 }
-      - { name: kernel.event_listener, event: kernel.terminate }
+      - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
+      - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
       - { name: kernel.event_listener, event: kernel.exception }
+      - { name: kernel.event_listener, event: kernel.terminate }
