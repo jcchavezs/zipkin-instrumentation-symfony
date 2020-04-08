@@ -1,5 +1,5 @@
-SYMFONY_VERSION ?= dev-master
-LIBRARY_BRANCH ?= 3.0
+SYMFONY_VERSION ?= 4.4
+LIBRARY_BRANCH ?= master
 
 build: ## Builds the symfony app
 	./build.sh $(SYMFONY_VERSION) $(LIBRARY_BRANCH) $(SAMPLER)
