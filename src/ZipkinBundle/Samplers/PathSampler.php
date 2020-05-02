@@ -31,11 +31,9 @@ final class PathSampler implements Sampler
     }
 
     /**
-     * @param int $traceId
-     * @return bool
      * @throws InvalidArgumentException
      */
-    public function isSampled($traceId)
+    public function isSampled(string $traceId): bool
     {
         $masterRequest = $this->requestStack->getMasterRequest();
         if ($masterRequest === null) {

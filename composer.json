@@ -33,10 +33,10 @@
     },
     "scripts": {
         "test": "./vendor/bin/phpunit tests/Unit",
-        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* ./",
-        "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* ./"
+        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./",
+        "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./"
     },
-        "extra": {
+    "extra": {
         "branch-alias": {
             "dev-master": "0.2.x-dev"
         }
