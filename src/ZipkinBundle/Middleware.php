@@ -2,16 +2,9 @@
 
 namespace ZipkinBundle;
 
-use Exception;
 use Zipkin\Kind;
 use Zipkin\Tags;
-use Zipkin\Tracer;
-use Zipkin\Tracing;
-use Zipkin\Propagation\Map;
-use Psr\Log\LoggerInterface;
 use function Zipkin\Timestamp\now;
-use Zipkin\Propagation\TraceContext;
-use Zipkin\Propagation\SamplingFlags;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
@@ -20,48 +13,34 @@ use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 final class Middleware
 {
-    const SCOPE_CLOSER_KEY = 'zipkin_bundle_scope_closer';
-
     /**
      * @var Tracer
      */
     private $tracer;
-
     /**
-     * @var callable
+     * @var bool
      */
-    private $extractor;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
+    private $isFinished = false;
     /**
      * @var array
      */
     private $tags;
-
     /**
-     * @var SpanCustomizer[]|array
+     * @var SpanCustomizer[]
      */
     private $spanCustomizers;
 
     /**
-     * @var Tracing $tracing
-     * @var LoggerInterface $logger
+     * @var Tracer $tracer
      * @var array $tags
      * @var SpanCustomizer[]|array $spanCustomizers
      */
     public function __construct(
-        Tracing $tracing,
-        LoggerInterface $logger,
+        Tracer $tracer,
         array $tags = [],
         SpanCustomizer ...$spanCustomizers
     ) {
-        $this->tracer = $tracing->getTracer();
-        $this->extractor = $tracing->getPropagation()->getExtractor(new Map());
-        $this->logger = $logger;
+        $this->tracer = $tracer;
         $this->tags = $tags;
         $this->spanCustomizers = $spanCustomizers;
     }
@@ -76,27 +55,18 @@ final class Middleware
         }
 
         $request = $event->getRequest();
-        try {
-            $spanContext = $this->extractContextFromRequest($request);
-        } catch (Exception $e) {
-            $this->logger->error(
-                sprintf('Error when starting the span: %s', $e->getMessage())
-            );
-            return;
-        }
+        $headers = array_map(function ($values) {return $values[0];},$request->headers->all());
+        $tags = array_merge([
+            Tags\HTTP_HOST => $request->getHost(),
+            Tags\HTTP_METHOD => $request->getMethod(),
+            Tags\HTTP_PATH => $request->getPathInfo(),
+        ], $this->tags);
 
-        $span = $this->tracer->nextSpan($spanContext);
-        $span->start();
-        $span->setName($request->getMethod());
-        $span->setKind(Kind\SERVER);
-        $span->tag(Tags\HTTP_HOST, $request->getHost());
-        $span->tag(Tags\HTTP_METHOD, $request->getMethod());
-        $span->tag(Tags\HTTP_PATH, $request->getPathInfo());
-        foreach ($this->tags as $key => $value) {
-            $span->tag($key, $value);
-        }
+        $this->tracer->prepareSpan($headers, $request->getMethod(), Kind\SERVER);
 
-        $request->attributes->set(self::SCOPE_CLOSER_KEY, $this->tracer->openScope($span));
+        foreach ($tags as $tag => $value) {
+            $this->tracer->addTag($tag, $value);
+        }
     }
 
     /**
@@ -123,14 +93,9 @@ final class Middleware
             return;
         }
 
-        $span = $this->tracer->getCurrentSpan();
-        if ($span === null) {
-            return;
-        }
-
         $errorMessage = $event->getThrowable()->getMessage();
 
-        $span->tag(Tags\ERROR, $errorMessage);
+        $this->tracer->addTag(Tags\ERROR, $errorMessage);
         $this->finishSpan($event->getRequest(), null);
     }
 
@@ -155,67 +120,35 @@ final class Middleware
         // the span but in order to not to break existing user relaying on the
         // onKernelTerminate to finish the span we add this temporary fix.
 
-        $scopeCloser = $event->getRequest()->attributes->get(self::SCOPE_CLOSER_KEY);
-        if ($scopeCloser !== null) {
-            $this->finishSpan($event->getRequest(), $event->getResponse());
-        }
 
-        $this->flushTracer();
+        $this->finishSpan($event->getRequest(), $event->getResponse());
+
+
+        $this->tracer->flushTracer();
     }
 
     private function finishSpan(Request $request, $response)
     {
-        $span = $this->tracer->getCurrentSpan();
-        if ($span === null) {
+        if (!$this->tracer->spanExist() || $this->isFinished) {
             return;
         }
 
-        foreach ($this->spanCustomizers as $customizer) {
-            $customizer($request, $span);
-        }
+        $this->tracer->runCustomizers($this->spanCustomizers, $request);
 
         $routeName = $request->attributes->get('_route');
         if ($routeName) {
-            $span->tag('symfony.route', $routeName);
+            $this->tracer->addTag('symfony.route', $routeName);
         }
 
         if ($response != null) {
             $statusCode = $response->getStatusCode();
             if ($statusCode > 399) {
-                $span->tag(Tags\ERROR, (string) $statusCode);
+                $this->tracer->addTag(Tags\ERROR, (string) $statusCode);
             }
-            $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
+            $this->tracer->addTag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
         }
 
-        $span->finish();
-        $scopeCloser = $request->attributes->get(self::SCOPE_CLOSER_KEY);
-        if ($scopeCloser !== null) {
-            $scopeCloser();
-            // We reset the scope closer as it did its job
-            $request->attributes->remove(self::SCOPE_CLOSER_KEY);
-        }
-    }
-
-    /**
-     * @param Request $request
-     * @return TraceContext|SamplingFlags|null
-     */
-    private function extractContextFromRequest(Request $request)
-    {
-        return ($this->extractor)(array_map(
-            function ($values) {
-                return $values[0];
-            },
-            $request->headers->all()
-        ));
-    }
-
-    private function flushTracer()
-    {
-        try {
-            $this->tracer->flush();
-        } catch (Exception $e) {
-            $this->logger->error($e->getMessage());
-        }
+        $this->tracer->finishSpan();
+        $this->isFinished = true;
     }
 }

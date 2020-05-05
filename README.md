@@ -27,8 +27,7 @@ services:
   tracing_middleware:
     class: ZipkinBundle\Middleware
     arguments:
-      - "@zipkin.default_tracing"
-      - "@logger"
+      - "@zipkin.tracer"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
       - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
@@ -141,8 +140,7 @@ services:
   tracing_middleware:
     class: ZipkinBundle\Middleware
     arguments:
-      - "@zipkin.default_tracing"
-      - "@logger"
+      - "@zipkin.tracer"
       - { instance: %instance_name% }
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
@@ -155,20 +153,25 @@ services:
 
 Although this bundle provides a tracer based on the configuration parameters
 under the `zipkin` node, you can inject your own `tracing component` to the 
-middleware as long as it implements the `Zipkin\Tracing` interface:
+tracing wrapper as long as it implements the `Zipkin\Tracing` interface:
 
 ```yaml
 services:
   tracing_middleware:
     class: ZipkinBundle\Middleware
     arguments:
-      - "@my_own_tracing"
-      - "@logger"
+      - "@my_own_tracer"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
       - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
       - { name: kernel.event_listener, event: kernel.exception }
       - { name: kernel.event_listener, event: kernel.terminate }
+
+  my_own_tracer:
+    class: ZipkinBundle\Tracer
+    arguments: 
+      - "@my_own_tracing"
+      - "@logger"  
 ```
 
 ## Span customizers
@@ -199,8 +202,7 @@ services:
   tracing_middleware:
     class: ZipkinBundle\Middleware
     arguments:
-      - "@zipkin.default_tracing"
-      - "@logger"
+      - "@zipkin.tracer"
       - { instance: %instance_name% }
       - "@zipkin.span_customizer.by_path_namer"
     tags:

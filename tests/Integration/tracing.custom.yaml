@@ -30,7 +30,7 @@ services:
   tracing.symfony_middleware:
     class: ZipkinBundle\Middleware
     arguments:
-      - "@zipkin.default_tracing"
+      - "@zipkin.tracer"
       - "@logger"
       - { "version": "xxx" }
       - "@zipkin.span_namer.route"

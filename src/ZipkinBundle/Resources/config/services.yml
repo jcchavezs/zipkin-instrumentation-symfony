@@ -1,4 +1,11 @@
 services:
+  zipkin.tracer:
+    class: ZipkinBundle\Tracer
+    public: true
+    arguments:
+      - "@zipkin.default_tracing"
+      - "@logger"
+
   zipkin.default_tracing:
     class: Zipkin\DefaultTracing
     public: true

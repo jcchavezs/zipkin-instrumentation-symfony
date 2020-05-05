@@ -15,6 +15,7 @@ use Zipkin\Reporters\InMemory as InMemoryReporter;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use ZipkinBundle\Tracer;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
@@ -31,8 +32,9 @@ final class MiddlewareTest extends TestCase
     {
         $tracing = TracingBuilder::create()->build();
         $logger = new NullLogger();
+        $tracer = new Tracer($tracing, $logger);
 
-        $middleware = new Middleware($tracing, $logger);
+        $middleware = new Middleware($tracer);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
@@ -50,8 +52,9 @@ final class MiddlewareTest extends TestCase
             ->havingReporter($reporter)
             ->build();
         $logger = new NullLogger();
+        $tracer = new Tracer($tracing, $logger);
 
-        $middleware = new Middleware($tracing, $logger, [self::TAG_KEY => self::TAG_VALUE]);
+        $middleware = new Middleware($tracer, [self::TAG_KEY => self::TAG_VALUE]);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -91,8 +94,9 @@ final class MiddlewareTest extends TestCase
             ->havingReporter($reporter)
             ->build();
         $logger = new NullLogger();
+        $tracer = new Tracer($tracing, $logger);
 
-        $middleware = new Middleware($tracing, $logger);
+        $middleware = new Middleware($tracer);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
@@ -122,7 +126,8 @@ final class MiddlewareTest extends TestCase
             ->havingReporter($reporter)
             ->build();
         $logger = new NullLogger();
-        $middleware = new Middleware($tracing, $logger);
+        $tracer = new Tracer($tracing, $logger);
+        $middleware = new Middleware($tracer);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
@@ -157,8 +162,9 @@ final class MiddlewareTest extends TestCase
             ->havingReporter($reporter)
             ->build();
         $logger = new NullLogger();
+        $tracer = new Tracer($tracing, $logger);
 
-        $middleware = new Middleware($tracing, $logger);
+        $middleware = new Middleware($tracer);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
@@ -197,9 +203,9 @@ final class MiddlewareTest extends TestCase
             ->havingSampler(BinarySampler::createAsAlwaysSample())
             ->havingReporter($reporter)
             ->build();
-        $logger = new NullLogger();
+        $tracer = new Tracer($tracing, new NullLogger());
 
-        $middleware = new Middleware($tracing, $logger);
+        $middleware = new Middleware($tracer);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -244,9 +250,10 @@ final class MiddlewareTest extends TestCase
         $tracing = TracingBuilder::create()
             ->havingSampler(BinarySampler::createAsAlwaysSample())
             ->build();
-        $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $tracer = new Tracer($tracing, new NullLogger());
+
+        $middleware = new Middleware($tracer);
 
         $request = new Request();
 
@@ -280,9 +287,9 @@ final class MiddlewareTest extends TestCase
             ->havingSampler(BinarySampler::createAsAlwaysSample())
             ->havingReporter($reporter)
             ->build();
-        $logger = new NullLogger();
+        $tracer = new Tracer($tracing, new NullLogger());
 
-        $middleware = new Middleware($tracing, $logger);
+        $middleware = new Middleware($tracer);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -327,9 +334,9 @@ final class MiddlewareTest extends TestCase
         $tracing = TracingBuilder::create()
             ->havingSampler(BinarySampler::createAsAlwaysSample())
             ->build();
-        $logger = new NullLogger();
+        $tracer = new Tracer($tracing, new NullLogger());
 
-        $middleware = new Middleware($tracing, $logger);
+        $middleware = new Middleware($tracer);
 
         $request = new Request();
 
