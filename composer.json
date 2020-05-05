@@ -3,11 +3,11 @@
     "description": "A Zipkin integration for Symfony applications",
     "type": "symfony-bundle",
     "require": {
-        "symfony/config": "^3.4|^4.0|^5.0",
-        "symfony/http-kernel": "^3.4|^4.0|^5.0",
-        "symfony/routing": "^3.4|^4.0|^5.0",
-        "symfony/dependency-injection": "^3.4|^4.0|^5.0",
-        "openzipkin/zipkin": "^1.3.4"
+        "symfony/config": "^4.4|^5.0",
+        "symfony/http-kernel": "^4.4|^5.0",
+        "symfony/routing": "^4.4|^5.0",
+        "symfony/dependency-injection": "^4.4|^5.0",
+        "openzipkin/zipkin": "2.x-dev"
     },
     "require-dev": {
         "phpunit/phpunit": "^6.5.14",
@@ -33,7 +33,12 @@
     },
     "scripts": {
         "test": "./vendor/bin/phpunit tests/Unit",
-        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* ./",
-        "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* ./"
+        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./",
+        "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.2.x-dev"
+        }
     }
 }

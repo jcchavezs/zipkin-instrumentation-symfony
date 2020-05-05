@@ -6,7 +6,7 @@ use Zipkin\Sampler;
 
 final class CustomSampler implements Sampler
 {
-    public function isSampled($traceId)
+    public function isSampled(string $traceId): bool
     {
         $out = fopen('php://stdout', 'w');
         fputs($out, "Using custom sampler :)\n");

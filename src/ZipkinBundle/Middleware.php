@@ -12,9 +12,11 @@ use Psr\Log\LoggerInterface;
 use function Zipkin\Timestamp\now;
 use Zipkin\Propagation\TraceContext;
 use Zipkin\Propagation\SamplingFlags;
-use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 final class Middleware
 {
@@ -46,10 +48,11 @@ final class Middleware
     private $spanCustomizers;
 
     /**
-     * @var bool
+     * @var Tracing $tracing
+     * @var LoggerInterface $logger
+     * @var array $tags
+     * @var SpanCustomizer[]|array $spanCustomizers
      */
-    private $usesDeprecatedEvents;
-
     public function __construct(
         Tracing $tracing,
         LoggerInterface $logger,
@@ -61,7 +64,6 @@ final class Middleware
         $this->logger = $logger;
         $this->tags = $tags;
         $this->spanCustomizers = $spanCustomizers;
-        $this->usesDeprecatedEvents = (Kernel::VERSION[0] === '3');
     }
 
     /**
@@ -115,7 +117,7 @@ final class Middleware
     /**
      * @see https://symfony.com/doc/4.4/reference/events.html#kernel-exception
      */
-    public function onKernelException(KernelEvent $event)
+    public function onKernelException(ExceptionEvent $event)
     {
         if (!$event->isMasterRequest()) {
             return;
@@ -126,17 +128,7 @@ final class Middleware
             return;
         }
 
-        if ($this->usesDeprecatedEvents) {
-            /**
-             * @var \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
-             */
-            $errorMessage = $event->getException()->getMessage();
-        } else {
-            /**
-             * @var \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
-             */
-            $errorMessage = $event->getThrowable()->getMessage();
-        }
+        $errorMessage = $event->getThrowable()->getMessage();
 
         $span->tag(Tags\ERROR, $errorMessage);
         $this->finishSpan($event->getRequest(), null);
@@ -145,25 +137,15 @@ final class Middleware
     /**
      * @see https://symfony.com/doc/4.4/reference/events.html#kernel-response
      */
-    public function onKernelResponse(KernelEvent $event)
+    public function onKernelResponse(ResponseEvent $event)
     {
-        if ($this->usesDeprecatedEvents) {
-            /**
-             * @var \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
-             */
-        } else {
-            /**
-             * @var \Symfony\Component\HttpKernel\Event\ResponseEvent $event
-             */
-        }
-
         $this->finishSpan($event->getRequest(), $event->getResponse());
     }
 
     /**
      * @see https://symfony.com/doc/4.4/reference/events.html#kernel-terminate
      */
-    public function onKernelTerminate(KernelEvent $event)
+    public function onKernelTerminate(TerminateEvent $event)
     {
         // Previously, the onKernelResponse listener did not exist in this class
         // and hence we finished the span and closed the scope on the onKernelTerminate.
@@ -175,16 +157,6 @@ final class Middleware
 
         $scopeCloser = $event->getRequest()->attributes->get(self::SCOPE_CLOSER_KEY);
         if ($scopeCloser !== null) {
-            if ($this->usesDeprecatedEvents) {
-                /**
-                 * @var \Symfony\Component\HttpKernel\Event\PostResponseEvent $event
-                 */
-            } else {
-                /**
-                 * @var \Symfony\Component\HttpKernel\Event\TerminateEvent $event
-                 */
-            }
-
             $this->finishSpan($event->getRequest(), $event->getResponse());
         }
 

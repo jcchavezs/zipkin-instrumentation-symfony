@@ -10,10 +10,13 @@ use PHPUnit\Framework\TestCase;
 use Zipkin\Samplers\BinarySampler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 final class MiddlewareTest extends TestCase
 {
@@ -97,21 +100,12 @@ final class MiddlewareTest extends TestCase
 
         $middleware->onKernelRequest($event->reveal());
 
-        if (class_exists('Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent')) {
-            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent(
-                $this->mockKernel(),
-                new Request(),
-                HttpKernelInterface::SUB_REQUEST, // isMasterRequest will be false
-                new Exception()
-            );
-        } else {
-            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\ExceptionEvent(
-                $this->mockKernel(),
-                new Request(),
-                HttpKernelInterface::SUB_REQUEST, // isMasterRequest will be false
-                new Exception()
-            );
-        }
+        $exceptionEvent = new ExceptionEvent(
+            $this->mockKernel(),
+            new Request(),
+            HttpKernelInterface::SUB_REQUEST, // isMasterRequest will be false
+            new Exception()
+        );
 
         $middleware->onKernelException($exceptionEvent);
 
@@ -136,21 +130,12 @@ final class MiddlewareTest extends TestCase
 
         $middleware->onKernelRequest($event->reveal());
 
-        if (class_exists('Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent')) {
-            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent(
-                $this->mockKernel(),
-                new Request(),
-                HttpKernelInterface::MASTER_REQUEST, // isMasterRequest will be true
-                new Exception(self::EXCEPTION_MESSAGE)
-            );
-        } else {
-            $exceptionEvent = new \Symfony\Component\HttpKernel\Event\ExceptionEvent(
-                $this->mockKernel(),
-                new Request(),
-                HttpKernelInterface::MASTER_REQUEST, // isMasterRequest will be true
-                new Exception(self::EXCEPTION_MESSAGE)
-            );
-        }
+        $exceptionEvent = new ExceptionEvent(
+            $this->mockKernel(),
+            new Request(),
+            HttpKernelInterface::MASTER_REQUEST, // isMasterRequest will be true
+            new Exception(self::EXCEPTION_MESSAGE)
+        );
 
         $middleware->onKernelException($exceptionEvent);
 
@@ -181,19 +166,11 @@ final class MiddlewareTest extends TestCase
 
         $middleware->onKernelRequest($event->reveal());
 
-        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
-            $terminateEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
-                $this->mockKernel(),
-                new Request(),
-                new Response()
-            );
-        } else {
-            $terminateEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
-                $this->mockKernel(),
-                new Request(),
-                new Response()
-            );
-        }
+        $terminateEvent = new TerminateEvent(
+            $this->mockKernel(),
+            new Request(),
+            new Response()
+        );
 
         $middleware->onKernelTerminate($terminateEvent);
         $spans = $reporter->flush();
@@ -236,21 +213,12 @@ final class MiddlewareTest extends TestCase
 
         $middleware->onKernelRequest($event->reveal());
 
-        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\FilterResponseEvent(
-                $this->mockKernel(),
-                $request,
-                KernelInterface::MASTER_REQUEST,
-                new Response('', $responseStatusCode)
-            );
-        } else {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\ResponseEvent(
-                $this->mockKernel(),
-                $request,
-                KernelInterface::MASTER_REQUEST,
-                new Response('', $responseStatusCode)
-            );
-        }
+        $responseEvent = new ResponseEvent(
+            $this->mockKernel(),
+            $request,
+            KernelInterface::MASTER_REQUEST,
+            new Response('', $responseStatusCode)
+        );
 
         $middleware->onKernelResponse($responseEvent);
 
@@ -288,21 +256,12 @@ final class MiddlewareTest extends TestCase
 
         $middleware->onKernelRequest($event->reveal());
 
-        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\FilterResponseEvent(
-                $this->mockKernel(),
-                $request,
-                KernelInterface::MASTER_REQUEST,
-                new Response()
-            );
-        } else {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\ResponseEvent(
-                $this->mockKernel(),
-                $request,
-                KernelInterface::MASTER_REQUEST,
-                new Response()
-            );
-        }
+        $responseEvent = new ResponseEvent(
+            $this->mockKernel(),
+            $request,
+            KernelInterface::MASTER_REQUEST,
+            new Response()
+        );
 
         $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
 
@@ -337,19 +296,11 @@ final class MiddlewareTest extends TestCase
 
         $middleware->onKernelRequest($event->reveal());
 
-        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
-                $this->mockKernel(),
-                $request,
-                new Response('', $responseStatusCode)
-            );
-        } else {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
-                $this->mockKernel(),
-                $request,
-                new Response('', $responseStatusCode)
-            );
-        }
+        $responseEvent = new TerminateEvent(
+            $this->mockKernel(),
+            $request,
+            new Response('', $responseStatusCode)
+        );
 
         $middleware->onKernelTerminate($responseEvent);
 
@@ -388,19 +339,11 @@ final class MiddlewareTest extends TestCase
 
         $middleware->onKernelRequest($event->reveal());
 
-        if (class_exists('Symfony\Component\HttpKernel\Event\PostResponseEvent')) {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\PostResponseEvent(
-                $this->mockKernel(),
-                $request,
-                new Response()
-            );
-        } else {
-            $responseEvent = new \Symfony\Component\HttpKernel\Event\TerminateEvent(
-                $this->mockKernel(),
-                $request,
-                new Response()
-            );
-        }
+        $responseEvent = new TerminateEvent(
+            $this->mockKernel(),
+            $request,
+            new Response()
+        );
 
         $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
 

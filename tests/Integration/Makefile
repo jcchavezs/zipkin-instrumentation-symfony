@@ -9,3 +9,6 @@ run-app: ## Runs symfony app
 
 run-zipkin: ## Runs zipkin server
 	docker run -d -p 9411:9411 openzipkin/zipkin
+
+clean:
+	rm -rf test-app
