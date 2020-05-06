@@ -210,6 +210,18 @@ services:
       - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
+## HTTP Client
+
+This bundle provides an implementation of Symfony's [HttpClient component](https://symfony.com/doc/current/components/http_client.html) that includes tracing.
+
+```php
+use Symfony\Component\HttpClient\HttpClient;
+use ZipkinBundle\Components\HttpClient as ZipkinHttpClient;
+
+$client = new ZipkinHttpClient(HttpClient::create(), $tracing);
+$response = $client->request('GET', 'https://api.github.com/repos/symfony/symfony-docs');
+```
+
 ## Contributing
 
 All contributions and feedback are welcome.
