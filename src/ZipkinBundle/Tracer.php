@@ -73,7 +73,7 @@ class Tracer
     public function addTag($key, $value): void
     {
         $span = $this->tracer->getCurrentSpan();
-        if(null === $span) {
+        if (null === $span) {
             return;
         }
 
@@ -83,7 +83,7 @@ class Tracer
     public function runCustomizers(array $spanCustomizer, Request $request): void
     {
         $span = $this->tracer->getCurrentSpan();
-        if(null === $span) {
+        if (null === $span) {
             return;
         }
 
@@ -95,13 +95,13 @@ class Tracer
     public function finishSpan()
     {
         $span = $this->tracer->getCurrentSpan();
-        if(null === $span) {
+        if (null === $span) {
             return;
         }
 
         $span->finish();
 
-        if($this->scopeCloserKey) {
+        if ($this->scopeCloserKey) {
             ($this->scopeCloserKey)();
             $this->scopeCloserKey = null;
         }

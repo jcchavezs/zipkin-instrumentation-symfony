@@ -55,7 +55,9 @@ final class Middleware
         }
 
         $request = $event->getRequest();
-        $headers = array_map(function ($values) {return $values[0];},$request->headers->all());
+        $headers = array_map(function ($values) {
+            return $values[0];
+        }, $request->headers->all());
         $tags = array_merge([
             Tags\HTTP_HOST => $request->getHost(),
             Tags\HTTP_METHOD => $request->getMethod(),
