@@ -2,16 +2,16 @@
 
 namespace ZipkinBundle\Components\HttpClient;
 
-use Throwable;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
+use Zipkin\SpanCustomizer;
 use Zipkin\Propagation\Map;
 use const Zipkin\Tags\ERROR;
+use Zipkin\SpanCustomizerShield;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseStreamInterface;
-use Zipkin\SpanCustomizerShield;
-use ZipkinBundle\Components\HttpClient\ContextRetrievers\InScope;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 final class HttpClient implements HttpClientInterface
 {
@@ -35,22 +35,15 @@ final class HttpClient implements HttpClientInterface
      */
     private $httpParser;
 
-    /**
-     * @var ContextRetriever
-     */
-    private $contextRetriever;
-
     public function __construct(
         HttpClientInterface $client,
         Tracing $tracing,
-        ContextRetriever $contextRetriever = null,
         HttpParser $httpParser = null
     ) {
         $this->delegate = $client;
         $this->tracer = $tracing->getTracer();
         $this->injector = $tracing->getPropagation()->getInjector(new Map());
         $this->httpParser = $httpParser ?? new DefaultHttpParser();
-        $this->contextRetriever = $contextRetriever ?: new InScope($this->tracer);
     }
 
     /**
@@ -58,29 +51,61 @@ final class HttpClient implements HttpClientInterface
      */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
-        if ($this->contextRetriever === null) {
-            $span = $this->tracer->nextSpan();
-        } else {
-            $context = ($this->contextRetriever)($options);
-            $span = $this->tracer->nextSpan($context);
-        }
+        $span = $this->tracer->nextSpan();
+        $span->start();
 
         $spanCustomizer = new SpanCustomizerShield($span);
-        $this->httpParser->request($method, $url, $options, $spanCustomizer);
+        $this->httpParser->request(strtolower($method), $url, $options, $spanCustomizer);
+
+        $headers = [];
+        ($this->injector)($span->getContext(), $headers);
 
         try {
-            $headers = [];
-            ($this->injector)($span->getContext(), $headers);
-            $options['headers'] = $headers + $options['headers'];
-            $response = $this->delegate->request($method, $url, $options);
-            $this->httpParser->response($response, $spanCustomizer);
-            return $response;
-        } catch (Throwable $e) {
+            $options['headers'] = $headers + ($options['headers'] ?? []);
+            $options['on_progress'] = self::buildOnProgress(
+                $options['on_progress'] ?? null,
+                [$this->httpParser, 'response'],
+                $spanCustomizer,
+                [$span, 'finish']
+            );
+            return $this->delegate->request($method, $url, $options);
+        } catch (TransportExceptionInterface $e) {
+            // Since response is an asynchronus operation, according to
+            // HttpClientInterface::request, this exception can only happen
+            // if an unsopported option is passed.
+            $span->setName(strtolower($method));
             $span->tag(ERROR, $e->getMessage());
-            throw $e;
-        } finally {
             $span->finish();
+            throw $e;
         }
+    }
+
+    private static function buildOnProgress(
+        ?callable $delegateOnProgress,
+        callable $httpParserResponse,
+        SpanCustomizer $spanCustomizer,
+        callable $spanCloser
+    ): callable {
+        return static function (
+            int $dlNow,
+            int $dlSize,
+            array $info
+        ) use (
+            $delegateOnProgress,
+            $httpParserResponse,
+            $spanCustomizer,
+            $spanCloser
+): void {
+            if ($delegateOnProgress !== null) {
+                ($delegateOnProgress)($dlNow, $dlSize, $info);
+            }
+
+            if ($info['canceled'] || $info['error'] !== null || $info['http_code'] > 199) {
+                // any of these three conditions represent the finalization of the request
+                ($httpParserResponse)($dlSize, $info, $spanCustomizer);
+                ($spanCloser)();
+            }
+        };
     }
 
     /**
