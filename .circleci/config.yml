@@ -24,10 +24,10 @@ jobs:
       - run: wget --retry-connrefused -T 60 -O /dev/null http://127.0.0.1:9411/health
       # start both processes in the background, but don't use composer as it dies
       - run:
-          command: cd ./tests/Integration && make SYMFONY_VERSION=4.4 LIBRARY_BRANCH=${CIRCLE_BRANCH} COMPOSER_RUNNER="php -d memory_limit=-1 /home/circleci/openzipkin/composer.phar" build
+          command: cd ./tests/E2E && make SYMFONY_VERSION=4.4 LIBRARY_BRANCH=${CIRCLE_BRANCH} COMPOSER_RUNNER="php -d memory_limit=-1 /home/circleci/openzipkin/composer.phar" build
       - run:
           background: true
-          command: php ./tests/Integration/test-app/bin/console server:run 8002
+          command: php ./tests/E2E/test-app/bin/console server:run 8002
       - run: wget -v --retry-connrefused -T 5 -O /dev/null 127.0.0.1:8002/_health
       - run: |
           # wait just in case
@@ -61,10 +61,10 @@ jobs:
       - run: wget --retry-connrefused -T 60 -O /dev/null http://127.0.0.1:9411/health
       # start both processes in the background, but don't use composer as it dies
       - run:
-          command: cd ./tests/Integration && make SYMFONY_VERSION=5.0 LIBRARY_BRANCH=${CIRCLE_BRANCH} COMPOSER_RUNNER="php -d memory_limit=-1 /home/circleci/openzipkin/composer.phar" build
+          command: cd ./tests/E2E && make SYMFONY_VERSION=5.0 LIBRARY_BRANCH=${CIRCLE_BRANCH} COMPOSER_RUNNER="php -d memory_limit=-1 /home/circleci/openzipkin/composer.phar" build
       - run:
           background: true
-          command: php ./tests/Integration/test-app/bin/console server:run 8002
+          command: php ./tests/E2E/test-app/bin/console server:run 8002
       - run: wget -v --retry-connrefused -T 5 -O /dev/null 127.0.0.1:8002/_health
       - run: |
           # wait just in case

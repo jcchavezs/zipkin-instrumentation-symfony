@@ -18,7 +18,7 @@ mv composer.json composer.json.dist
 cat composer.json.dist \
 | jq '. + {"minimum-stability": "dev"}' \
 | jq '. + {"prefer-stable": true}' \
-| jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=tests/Integration --exclude=composer.lock --exclude=vendor ../../../. ./.zipkin-instrumentation-symfony"]' \
+| jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=tests/E2E --exclude=composer.lock --exclude=vendor ../../../. ./.zipkin-instrumentation-symfony"]' \
 | jq '.scripts["pre-install-cmd"] = ["@sync"]' \
 | jq '.scripts["pre-update-cmd"] = ["@sync"]' \
 | jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "*"' \
