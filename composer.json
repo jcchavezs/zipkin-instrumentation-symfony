@@ -33,7 +33,7 @@
     },
     "scripts": {
         "test": "./vendor/bin/phpunit tests/Unit",
-        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./",
+        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/E2E/test-app/* ./",
         "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./"
     },
     "extra": {
