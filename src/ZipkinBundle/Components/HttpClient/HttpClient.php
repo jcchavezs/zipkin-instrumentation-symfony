@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle\Components\HttpClient;
 
+use Throwable;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
 use Zipkin\SpanCustomizer;
@@ -68,18 +69,30 @@ final class HttpClient implements HttpClientInterface
                 $spanCustomizer,
                 [$span, 'finish']
             );
-            return $this->delegate->request($method, $url, $options);
+
+            // Since the cancel event is not being catched by the on_progress
+            // callback we need to manually track it by wrapping it.
+            return new Response(
+                $this->delegate->request($method, $url, $options),
+                $spanCustomizer,
+                [$span, 'finish']
+            );
         } catch (TransportExceptionInterface $e) {
             // Since response is an asynchronus operation, according to
             // HttpClientInterface::request, this exception can only happen
             // if an unsopported option is passed.
-            $span->setName(strtolower($method));
             $span->tag(ERROR, $e->getMessage());
             $span->finish();
             throw $e;
         }
     }
 
+    /**
+     * buildOnProgress wraps an existing on_progress to listen to the request
+     * completion. on_progress callback will be called on DNS resolution, on
+     * arrival of headers and on completion; it will also be called on upload/download
+     * of data and at least 1/s
+     */
     private static function buildOnProgress(
         ?callable $delegateOnProgress,
         callable $httpParserResponse,
@@ -95,12 +108,20 @@ final class HttpClient implements HttpClientInterface
             $httpParserResponse,
             $spanCustomizer,
             $spanCloser
-): void {
+        ): void {
             if ($delegateOnProgress !== null) {
-                ($delegateOnProgress)($dlNow, $dlSize, $info);
+                try {
+                    ($delegateOnProgress)($dlNow, $dlSize, $info);
+                } catch (Throwable $e) {
+                    // According to HttpClientInterface, throwing any exceptions
+                    // MUST abort the request, hence we finish the span in here.
+                    $spanCustomizer->tag(ERROR, $e->getMessage());
+                    ($spanCloser)();
+                    throw $e;
+                }
             }
 
-            if ($info['canceled'] || $info['error'] !== null || $info['http_code'] > 199) {
+            if ($info['error'] !== null || $info['http_code'] > 199) {
                 // any of these three conditions represent the finalization of the request
                 ($httpParserResponse)($dlSize, $info, $spanCustomizer);
                 ($spanCloser)();

@@ -29,13 +29,9 @@ class DefaultHttpParser implements HttpParser
             return;
         }
 
-        if ($info['canceled']) {
-            $span->tag(ERROR, (string) $info['canceled']);
-            return;
+        if ($responseSize > 0) {
+            $span->tag(HTTP_RESPONSE_SIZE, (string) $responseSize);
         }
-
-        $span->annotate('cs', $info['start_time'] * 1000000);
-        $span->tag(HTTP_RESPONSE_SIZE, (string) $responseSize);
         $this->parseStatusCode($info['http_code'], $span);
     }
 
