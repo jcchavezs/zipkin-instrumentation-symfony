@@ -2,7 +2,9 @@
 
 namespace ZipkinBundle\Components\HttpClient;
 
+use Generator;
 use Throwable;
+use TypeError;
 use Zipkin\Tracer;
 use Zipkin\Tracing;
 use Zipkin\SpanCustomizer;
@@ -53,6 +55,10 @@ final class HttpClient implements HttpClientInterface
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
         $span = $this->tracer->nextSpan();
+        if ($span->isNoop()) {
+            return $this->delegate->request($method, $url, $options);
+        }
+
         $span->start();
 
         $spanCustomizer = new SpanCustomizerShield($span);
@@ -130,10 +136,32 @@ final class HttpClient implements HttpClientInterface
     }
 
     /**
+     * unwrapResponses aims to unwrap the wrapped response so the delegate can interpret
+     * it.
+     */
+    private function unwrapResponses($responses): \Generator
+    {
+        foreach ($responses as $response) {
+            yield $response->unwrapResponse();
+        }
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function stream($responses, float $timeout = null): ResponseStreamInterface
     {
-        return $this->delegate->stream($responses, $timeout);
+        if ($responses instanceof Response) {
+            $responses = [$responses];
+        } elseif (!is_iterable($responses)) {
+            throw new TypeError(sprintf(
+                '"%s()" expects parameter 1 to be an iterable of %s objects, "%s" given.',
+                __METHOD__,
+                Response::class,
+                get_class($responses)
+            ));
+        }
+
+        return $this->delegate->stream($this->unwrapResponses($responses), $timeout);
     }
 }

@@ -34,6 +34,11 @@ final class Response implements ResponseInterface
         $this->onCancelCloser = $onCancelCloser;
     }
 
+    public function unwrapResponse(): ResponseInterface
+    {
+        return $this->delegate;
+    }
+
     /**
      * {@inheritdoc}
      */

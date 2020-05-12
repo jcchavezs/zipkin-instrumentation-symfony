@@ -11,7 +11,7 @@ use const Zipkin\Tags\HTTP_RESPONSE_SIZE;
 
 class DefaultHttpParser implements HttpParser
 {
-    public function request(string $method, string $url, array $options = [], SpanCustomizer $span): void
+    public function request(string $method, string $url, array $options, SpanCustomizer $span): void
     {
         $span->tag(HTTP_METHOD, $method);
         if (false === ($pieces = parse_url($url))) {

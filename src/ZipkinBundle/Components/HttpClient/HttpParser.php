@@ -16,7 +16,7 @@ interface HttpParser
     public function request(
         string $method,
         string $url,
-        array $options = [],
+        array $options,
         SpanCustomizer $span
     ): void;
 
