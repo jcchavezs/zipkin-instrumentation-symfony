@@ -13,6 +13,7 @@ use const Zipkin\Tags\ERROR;
 use Zipkin\SpanCustomizerShield;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\HttpClient\Response\ResponseStream;
 use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
@@ -55,20 +56,24 @@ final class HttpClient implements HttpClientInterface
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
         $span = $this->tracer->nextSpan();
+
+        $headers = $options['headers'] ?? [];
+        ($this->injector)($span->getContext(), $headers);
+        $options['headers'] = $headers;
+
         if ($span->isNoop()) {
+            // If the span is NO-OP, there is no reason to keep decorating
+            // the request process with tracing data, instead we delegate
+            // the call directly to the actual client but including trace
+            // headers.
             return $this->delegate->request($method, $url, $options);
         }
 
         $span->start();
-
         $spanCustomizer = new SpanCustomizerShield($span);
         $this->httpParser->request(strtolower($method), $url, $options, $spanCustomizer);
 
-        $headers = [];
-        ($this->injector)($span->getContext(), $headers);
-
         try {
-            $options['headers'] = $headers + ($options['headers'] ?? []);
             $options['on_progress'] = self::buildOnProgress(
                 $options['on_progress'] ?? null,
                 [$this->httpParser, 'response'],
@@ -136,17 +141,6 @@ final class HttpClient implements HttpClientInterface
     }
 
     /**
-     * unwrapResponses aims to unwrap the wrapped response so the delegate can interpret
-     * it.
-     */
-    private function unwrapResponses($responses): \Generator
-    {
-        foreach ($responses as $response) {
-            yield $response->unwrapResponse();
-        }
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function stream($responses, float $timeout = null): ResponseStreamInterface
@@ -162,6 +156,6 @@ final class HttpClient implements HttpClientInterface
             ));
         }
 
-        return $this->delegate->stream($this->unwrapResponses($responses), $timeout);
+        return new ResponseStream(Response::stream($this->delegate, $responses, $timeout));
     }
 }

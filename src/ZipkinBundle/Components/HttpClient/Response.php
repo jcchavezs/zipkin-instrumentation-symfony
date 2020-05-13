@@ -2,11 +2,18 @@
 
 namespace ZipkinBundle\Components\HttpClient;
 
+use TypeError;
+use SplObjectStorage;
+
 use Zipkin\SpanCustomizer;
-use Symfony\Contracts\HttpClient\ResponseInterface;
-
 use const Zipkin\Tags\ERROR;
+use Symfony\Contracts\HttpClient\ResponseInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/**
+ * Response is a wrapping around a ResponseInterface that makes
+ * it possible to track the cancelation in a request.
+ */
 final class Response implements ResponseInterface
 {
     /**
@@ -34,9 +41,31 @@ final class Response implements ResponseInterface
         $this->onCancelCloser = $onCancelCloser;
     }
 
-    public function unwrapResponse(): ResponseInterface
+    /**
+     * This method allows the wrapped response to be identified by the original client
+     * and then make it possible the streaming. The design of the solution is borrowed
+     * from the TraceableClient in the HttpClient:
+     * https://github.com/symfony/symfony/blob/afc44dae16/src/Symfony/Component/HttpClient/Response/TraceableResponse.php#L112
+     *
+     * @internal
+     */
+    public static function stream(HttpClientInterface $client, iterable $responses, ?float $timeout): \Generator
     {
-        return $this->delegate;
+        $wrappedResponses = [];
+        $traceableMap = new SplObjectStorage();
+
+        foreach ($responses as $response) {
+            if (!$response instanceof self) {
+                throw new TypeError(sprintf('"%s::stream()" expects parameter 1 to be an iterable of %s objects, "%s" given.', HttpClient::class, self::class, get_class($r)));
+            }
+
+            $traceableMap[$response->delegate] = $response;
+            $wrappedResponses[] = $response->delegate;
+        }
+
+        foreach ($client->stream($wrappedResponses, $timeout) as $response => $chunk) {
+            yield $traceableMap[$response] => $chunk;
+        }
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle\Tests\Unit\Components\HttpClient;
 
+use Zipkin\Sampler;
 use Zipkin\TracingBuilder;
 use Zipkin\Reporters\InMemory;
 use PHPUnit\Framework\TestCase;
@@ -15,35 +16,41 @@ use Symfony\Component\HttpClient\Exception\ClientException;
 final class HttpClientTest extends TestCase
 {
     /**
-     * @dataProvider requestInfoForHeaders
+     * @dataProvider requestInfoForRequestHeaders
      */
-    public function testPropagationHeadersAreInjected(array $requestInfo)
+    public function testPropagationHeadersAreInjectedDespiteSampling(array $requestOptions, array $expectedRequestHeaders)
     {
-        $response = new MockResponse('', $requestInfo);
+        $this->testPropagationHeadersAreInjected(BinarySampler::createAsAlwaysSample(), $requestOptions, $expectedHeaders);
+        $this->testPropagationHeadersAreInjected(BinarySampler::createAsNeverSample(), $requestOptions, $expectedHeaders);
+    }
+
+    private function testPropagationHeadersAreInjected(Sampler $sampler, array $requestOptions, array $expectedRequestHeaders)
+    {
+        $response = new MockResponse('', ['http_code' => 200]);
         $client = new TraceableHttpClient(new MockHttpClient($response));
         $inMemory = new InMemory();
         $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
+            ->havingSampler($sampler)
             ->havingReporter($inMemory)
             ->build();
         $tracedClient = new HttpClient($client, $tracing);
-        $response = $tracedClient->request('GET', 'http://test.com');
+        $tracedClient->request('GET', 'http://test.com', $requestOptions);
         $requestHeaders = $client->getTracedRequests()[0]['options']['headers'];
-        $this->assertArrayHasKey('x-b3-traceid', $requestHeaders);
-        $this->assertArrayHasKey('x-b3-spanid', $requestHeaders);
-        $this->assertArrayHasKey('x-b3-sampled', $requestHeaders);
+        foreach ($expectedRequestHeaders as $header) {
+            $this->assertArrayHasKey($header, $requestHeaders);
+        }
     }
 
-    public function requestInfoForHeaders(): array
+    public function requestInfoForRequestHeaders(): array
     {
         return [
-            [
-                ['http_code' => 200, 'headers' => ['request_id' => '123abc']],
-                ['x-b3-traceid', 'x-b3-spanid', 'x-b3-sampled', 'request_id']
+            'with no headers' => [
+                [],
+                ['x-b3-traceid', 'x-b3-spanid', 'x-b3-sampled'],
             ],
-            [
-                ['http_code' => 200],
-                ['x-b3-traceid', 'x-b3-spanid', 'x-b3-sampled']
+            'with headers' => [
+                ['headers' => ['request_id' => 'abc123']],
+                ['x-b3-traceid', 'x-b3-spanid', 'x-b3-sampled', 'request_id'],
             ]
         ];
     }
@@ -61,8 +68,8 @@ final class HttpClientTest extends TestCase
         $response = $tracedClient->request('GET', 'http://test.com');
         $tracing->getTracer()->flush();
         $spans = $inMemory->flush();
-        $span = $spans[0]->toArray();
         $this->assertCount(1, $spans);
+        $span = $spans[0]->toArray();
         $this->assertEquals('http/get', $span['name']);
         $this->assertEquals(200, $response->getStatusCode());
     }
@@ -86,8 +93,8 @@ final class HttpClientTest extends TestCase
 
         $tracing->getTracer()->flush();
         $spans = $inMemory->flush();
-        $span = $spans[0]->toArray();
         $this->assertCount(1, $spans);
+        $span = $spans[0]->toArray();
         $this->assertEquals('http/get', $span['name']);
         $this->assertEquals('403', $span['tags']['error']);
     }
