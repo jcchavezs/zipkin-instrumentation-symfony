@@ -1,4 +1,4 @@
-# Zipkin Symfony
+# Zipkin Instrumentation for Symfony
 
 [![Build Status](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony.svg?branch=master)](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony)
 [![CircleCI](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master.svg?style=svg)](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master)

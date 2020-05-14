@@ -1,4 +1,4 @@
-# Symfony HTTP Client
+# Zipkin Instrumentation for Symfony HTTP Client
 
 This bundle provides an implementation of Symfony's [HTTP Client component](https://symfony.com/doc/current/components/http_client.html) that enables tracing.
 
@@ -7,6 +7,8 @@ This bundle provides an implementation of Symfony's [HTTP Client component](http
 You can wrap an existing HTTP Client:
 
 ```php
+<?php
+
 use Symfony\Component\HttpClient\HttpClient;
 use ZipkinBundle\Components\HttpClient as ZipkinHttpClient;
 
@@ -25,13 +27,13 @@ services:
       - "@zipkin.default_tracing"
 ```
 
-Notice that `ZipkinBundle\Components\HttpClient\HttpClient` is just a wrapper around an existing HTTP Client, hence if you want to configure its settings by passing options to the underlaying client or [setting the options in the default one](https://symfony.com/doc/current/reference/configuration/framework.html#http-client).
+Notice that `ZipkinBundle\Components\HttpClient\HttpClient` is just a wrapper around an existing HTTP Client, hence if you want to configure its settings by passing options you can do that with the underlaying client or [setting the options in the default one](https://symfony.com/doc/current/reference/configuration/framework.html#http-client).
 
-Once declared as a service you can inject it using the Symfony DI or using the autowiring alias. See [this documentation](https://symfony.com/doc/current/components/http_client.html#injecting-the-http-client-into-services) for more details.
+Once declared the zipkin http client as a service you can inject it using the Symfony DI or using the autowiring alias. See [this documentation](https://symfony.com/doc/current/components/http_client.html#injecting-the-http-client-into-services) for more details.
 
 ## Customizing spans
 
-This client provides a `ZipkinBundle\Components\HttpClient\HttpParser` interface which is used for customizing the tags being added to an span based on the request and the response.
+This client provides a `ZipkinBundle\Components\HttpClient\HttpParser` interface which is used for customizing the tags being added to a span based on the request and the response data.
 
 ```yaml
 services:
@@ -40,15 +42,20 @@ services:
     arguments:
       - "@http_client"
       - "@zipkin.default_tracing"
-      - "@search_http_parser"
+      - "@search_http_parser" # the custom parser
 ```
 
 We also provide a default parser `ZipkinBundle\Components\HttpClient\DefaultHttpParser` which covers the standard cases for HTTP tracing but it can be easily extended to fullfill more advanced cases:
 
 ```php
+<?php
+
 use ZipkinBundle\Components\HttpClient\DefaultHttpParser;
 
 final class SearchHttpParser extends DefaultHttpParser {
+    // Additionally to the request standard tags, we add the
+    // search key (from the query string with key query) as 
+    // a span tag.
     public function request(
         string $method,
         string $url,
@@ -61,6 +68,9 @@ final class SearchHttpParser extends DefaultHttpParser {
         }
     }
 
+    // Additionally to the request standard tags, we add the
+    // value of the header x-search-id from the response as 
+    // a span tag.
     public function response(
         int $responseSize,
         array $info,
