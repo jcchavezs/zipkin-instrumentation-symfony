@@ -35,19 +35,19 @@ final class HttpClient implements HttpClientInterface
     private $injector;
 
     /**
-     * @var HttpParser
+     * @var HttpClientParser
      */
     private $httpParser;
 
     public function __construct(
         HttpClientInterface $client,
         Tracing $tracing,
-        HttpParser $httpParser = null
+        HttpClientParser $httpParser = null
     ) {
         $this->delegate = $client;
         $this->tracer = $tracing->getTracer();
         $this->injector = $tracing->getPropagation()->getInjector(new Map());
-        $this->httpParser = $httpParser ?? new DefaultHttpParser();
+        $this->httpParser = $httpParser ?? new DefaultHttpClientParser();
     }
 
     /**

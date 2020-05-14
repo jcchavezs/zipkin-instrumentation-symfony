@@ -33,7 +33,7 @@ Once declared the zipkin http client as a service you can inject it using the Sy
 
 ## Customizing spans
 
-This client provides a `ZipkinBundle\Components\HttpClient\HttpParser` interface which is used for customizing the tags being added to a span based on the request and the response data.
+This client provides a `ZipkinBundle\Components\HttpClient\HttpClientParser` interface which is used for customizing the tags being added to a span based on the request and the response data.
 
 ```yaml
 services:
@@ -45,14 +45,14 @@ services:
       - "@search_http_parser" # the custom parser
 ```
 
-We also provide a default parser `ZipkinBundle\Components\HttpClient\DefaultHttpParser` which covers the standard cases for HTTP tracing but it can be easily extended to fullfill more advanced cases:
+We also provide a default parser `ZipkinBundle\Components\HttpClient\DefaultHttpClientParser` which covers the standard cases for HTTP tracing but it can be easily extended to fullfill more advanced cases:
 
 ```php
 <?php
 
-use ZipkinBundle\Components\HttpClient\DefaultHttpParser;
+use ZipkinBundle\Components\HttpClient\DefaultHttpClientParser;
 
-final class SearchHttpParser extends DefaultHttpParser {
+final class SearchHttpClientParser extends DefaultHttpClientParser {
     // Additionally to the request standard tags, we add the
     // search key (from the query string with key query) as 
     // a span tag.

@@ -9,7 +9,7 @@ use const Zipkin\Tags\HTTP_STATUS_CODE;
 use const Zipkin\Tags\ERROR;
 use const Zipkin\Tags\HTTP_RESPONSE_SIZE;
 
-class DefaultHttpParser implements HttpParser
+class DefaultHttpClientParser implements HttpClientParser
 {
     public function request(string $method, string $url, array $options, SpanCustomizer $span): void
     {
