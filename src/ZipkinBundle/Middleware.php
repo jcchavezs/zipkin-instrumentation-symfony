@@ -13,6 +13,7 @@ use function Zipkin\Timestamp\now;
 use Zipkin\Propagation\TraceContext;
 use Zipkin\Propagation\SamplingFlags;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -87,16 +88,20 @@ final class Middleware
 
         $span = $this->tracer->nextSpan($spanContext);
         $span->start();
-        $span->setName($request->getMethod());
-        $span->setKind(Kind\SERVER);
-        $span->tag(Tags\HTTP_HOST, $request->getHost());
-        $span->tag(Tags\HTTP_METHOD, $request->getMethod());
-        $span->tag(Tags\HTTP_PATH, $request->getPathInfo());
-        foreach ($this->tags as $key => $value) {
-            $span->tag($key, $value);
+
+        if (!$span->isNoop()) {
+            $span->setName($request->getMethod());
+            $span->setKind(Kind\SERVER);
+            $span->tag(Tags\HTTP_HOST, $request->getHost());
+            $span->tag(Tags\HTTP_METHOD, $request->getMethod());
+            $span->tag(Tags\HTTP_PATH, $request->getPathInfo());
+            foreach ($this->tags as $key => $value) {
+                $span->tag($key, $value);
+            }
         }
 
-        $request->attributes->set(self::SCOPE_CLOSER_KEY, $this->tracer->openScope($span));
+        $scopeCloser = $this->tracer->openScope($span);
+        $request->attributes->set(self::SCOPE_CLOSER_KEY, $scopeCloser);
     }
 
     /**
@@ -109,7 +114,7 @@ final class Middleware
         }
 
         $span = $this->tracer->getCurrentSpan();
-        if ($span !== null) {
+        if ($span !== null && !$span->isNoop()) {
             $span->annotate('symfony.kernel.controller', now());
         }
     }
@@ -124,7 +129,7 @@ final class Middleware
         }
 
         $span = $this->tracer->getCurrentSpan();
-        if ($span === null) {
+        if ($span === null || $span->isNoop()) {
             return;
         }
 
@@ -156,41 +161,43 @@ final class Middleware
         // onKernelTerminate to finish the span we add this temporary fix.
 
         $scopeCloser = $event->getRequest()->attributes->get(self::SCOPE_CLOSER_KEY);
-        if ($scopeCloser !== null) {
+        if ($scopeCloser !== null) { // i.e. span hasn't been finished
             $this->finishSpan($event->getRequest(), $event->getResponse());
         }
 
         $this->flushTracer();
     }
 
-    private function finishSpan(Request $request, $response)
+    private function finishSpan(Request $request, ?Response $response)
     {
         $span = $this->tracer->getCurrentSpan();
         if ($span === null) {
             return;
         }
 
-        foreach ($this->spanCustomizers as $customizer) {
-            $customizer($request, $span);
-        }
-
-        $routeName = $request->attributes->get('_route');
-        if ($routeName) {
-            $span->tag('symfony.route', $routeName);
-        }
-
-        if ($response != null) {
-            $statusCode = $response->getStatusCode();
-            if ($statusCode > 399) {
-                $span->tag(Tags\ERROR, (string) $statusCode);
+        if (!$span->isNoop()) {
+            foreach ($this->spanCustomizers as $customizer) {
+                $customizer($request, $span);
             }
-            $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
+
+            $routeName = $request->attributes->get('_route');
+            if ($routeName) {
+                $span->tag('symfony.route', $routeName);
+            }
+
+            if ($response != null) {
+                $statusCode = $response->getStatusCode();
+                if ($statusCode > 399) {
+                    $span->tag(Tags\ERROR, (string) $statusCode);
+                }
+                $span->tag(Tags\HTTP_STATUS_CODE, (string) $statusCode);
+            }
         }
 
         $span->finish();
         $scopeCloser = $request->attributes->get(self::SCOPE_CLOSER_KEY);
         if ($scopeCloser !== null) {
-            $scopeCloser();
+            ($scopeCloser)();
             // We reset the scope closer as it did its job
             $request->attributes->remove(self::SCOPE_CLOSER_KEY);
         }
