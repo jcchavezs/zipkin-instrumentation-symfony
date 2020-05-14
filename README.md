@@ -210,6 +210,10 @@ services:
       - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
+## HTTP Client
+
+This bundle includes an adapter for HTTP Client. For more details, read [this doc](src/ZipkinBundle/Components/HttpClient/README.md).
+
 ## Contributing
 
 All contributions and feedback are welcome.
