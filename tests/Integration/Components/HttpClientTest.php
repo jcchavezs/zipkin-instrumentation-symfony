@@ -94,7 +94,7 @@ final class HttpClientTest extends TestCase
         }
     }
 
-    public function testStreamSuccess()
+    public function testStreamingRequestsSuccess()
     {
         $t = $this;
         $server = HttpTestServer::create(
