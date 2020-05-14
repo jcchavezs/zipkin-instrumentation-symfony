@@ -4,7 +4,7 @@ namespace ZipkinBundle\Components\HttpClient;
 
 use Zipkin\SpanCustomizer;
 
-interface HttpParser
+interface HttpClientParser
 {
     /**
      * request parses the incoming data related to a request in order to add
