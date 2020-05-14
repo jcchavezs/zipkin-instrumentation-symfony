@@ -18,14 +18,28 @@ final class HttpClientTest extends TestCase
     /**
      * @dataProvider requestInfoForRequestHeaders
      */
-    public function testPropagationHeadersAreInjectedDespiteSampling(array $requestOptions, array $expectedRequestHeaders)
-    {
-        $this->testPropagationHeadersAreInjected(BinarySampler::createAsAlwaysSample(), $requestOptions, $expectedHeaders);
-        $this->testPropagationHeadersAreInjected(BinarySampler::createAsNeverSample(), $requestOptions, $expectedHeaders);
+    public function testPropagationHeadersAreInjectedDespiteSampling(
+        array $requestOptions,
+        array $expectedRequestHeaders
+    ) {
+        $this->checkPropagationHeadersAreInjected(
+            BinarySampler::createAsAlwaysSample(),
+            $requestOptions,
+            $expectedRequestHeaders
+        );
+
+        $this->checkPropagationHeadersAreInjected(
+            BinarySampler::createAsNeverSample(),
+            $requestOptions,
+            $expectedRequestHeaders
+        );
     }
 
-    private function testPropagationHeadersAreInjected(Sampler $sampler, array $requestOptions, array $expectedRequestHeaders)
-    {
+    public function checkPropagationHeadersAreInjected(
+        Sampler $sampler,
+        array $requestOptions,
+        array $expectedRequestHeaders
+    ) {
         $response = new MockResponse('', ['http_code' => 200]);
         $client = new TraceableHttpClient(new MockHttpClient($response));
         $inMemory = new InMemory();

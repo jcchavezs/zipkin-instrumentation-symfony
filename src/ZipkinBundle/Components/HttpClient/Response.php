@@ -56,7 +56,12 @@ final class Response implements ResponseInterface
 
         foreach ($responses as $response) {
             if (!$response instanceof self) {
-                throw new TypeError(sprintf('"%s::stream()" expects parameter 1 to be an iterable of %s objects, "%s" given.', HttpClient::class, self::class, get_class($r)));
+                throw new TypeError(sprintf(
+                    '"%s::stream()" expects parameter 1 to be an iterable of %s objects, "%s" given.',
+                    HttpClient::class,
+                    self::class,
+                    get_class($response)
+                ));
             }
 
             $traceableMap[$response->delegate] = $response;
