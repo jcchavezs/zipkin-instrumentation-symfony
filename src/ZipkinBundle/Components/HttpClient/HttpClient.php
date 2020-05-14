@@ -52,6 +52,8 @@ final class HttpClient implements HttpClientInterface
 
     /**
      * {@inheritdoc}
+     *
+     * For more infor about the $options, check {@see HttpClientInterface::DEFAULT_OPTIONS}
      */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {

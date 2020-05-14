@@ -212,15 +212,7 @@ services:
 
 ## HTTP Client
 
-This bundle provides an implementation of Symfony's [HttpClient component](https://symfony.com/doc/current/components/http_client.html) that includes tracing.
-
-```php
-use Symfony\Component\HttpClient\HttpClient;
-use ZipkinBundle\Components\HttpClient as ZipkinHttpClient;
-
-$client = new ZipkinHttpClient(HttpClient::create(), $tracing);
-$response = $client->request('GET', 'https://api.github.com/repos/symfony/symfony-docs');
-```
+This bundle includes an adapter for HTTP Client. For more details, read [this doc](src/ZipkinBundle/Components/HttpClient/README.md).
 
 ## Contributing
 
