@@ -10,5 +10,5 @@ use Zipkin\Tracing;
 interface ZipkinHandlerInterface
 {
     public function __construct(Tracing $tracing);
-    public function handle(Envelope $envelope);
+    public function handle(Envelope $envelope): Envelope;
 }
