@@ -21,3 +21,15 @@ services:
       - "@request_stack"
       - "%zipkin.sampler.path.included_paths%"
       - "%zipkin.sampler.path.excluded_paths%"
+
+  zipkin.messenger.middleware:
+    class: ZipkinBundle\Components\Messenger\ZipkinMiddleware
+    public: true
+    arguments:
+      - "@zipkin.messenger.send_handler"
+      - "@zipkin.messenger.send_handler"
+
+  zipkin.messenger.send_handler:
+    class: ZipkinBundle\Components\Messenger\ZipkinSendHandler
+    arguments:
+      - "@zipkin.default_tracing"

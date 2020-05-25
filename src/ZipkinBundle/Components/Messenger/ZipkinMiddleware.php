@@ -27,10 +27,10 @@ class ZipkinMiddleware implements MiddlewareInterface
     public function handle(Envelope $envelope, StackInterface $stack): Envelope
     {
         if($envelope->all(ReceivedStamp::class)){
-            $this->receiveHandler->handle($envelope);
+            $envelope = $this->receiveHandler->handle($envelope);
         }
         else {
-            $this->sendHandler->handle($envelope);
+            $envelope = $this->sendHandler->handle($envelope);
         }
 
         return $stack->next()->handle($envelope, $stack);
