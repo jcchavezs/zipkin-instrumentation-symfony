@@ -21,7 +21,8 @@ class ZipkinMiddlewareTest extends TestCase
 
         /** @var ObjectProphecy|ZipkinHandlerInterface $sendHandler */
         $sendHandler = $this->prophesize(ZipkinHandlerInterface::class);
-        $sendHandler->handle($envelope)->shouldBeCalledOnce();
+        $sendHandler->handle($envelope)->shouldBeCalledOnce()->willReturn($envelope);
+        
         /** @var ObjectProphecy|ZipkinHandlerInterface $receiveHandler */
         $receiveHandler = $this->prophesize(ZipkinHandlerInterface::class);
         $receiveHandler->handle($envelope)->shouldBeCalledTimes(0);
@@ -46,7 +47,7 @@ class ZipkinMiddlewareTest extends TestCase
         $sendHandler->handle($envelope)->shouldBeCalledTimes(0);
         /** @var ObjectProphecy|ZipkinHandlerInterface $receiveHandler */
         $receiveHandler = $this->prophesize(ZipkinHandlerInterface::class);
-        $receiveHandler->handle($envelope)->shouldBeCalledOnce();
+        $receiveHandler->handle($envelope)->shouldBeCalledOnce()->willReturn($envelope);
 
         $stack = $this->prophesize(StackInterface::class);
         $next = $this->prophesize(MiddlewareInterface::class);
