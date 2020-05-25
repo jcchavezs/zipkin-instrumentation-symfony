@@ -21,5 +21,4 @@ class ZipkinStampTest extends TestCase
             'KEY2' => 'VALUE2'
         ], $result);
     }
-
 }

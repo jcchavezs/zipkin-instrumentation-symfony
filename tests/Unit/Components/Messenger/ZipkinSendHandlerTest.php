@@ -77,11 +77,13 @@ class ZipkinSendHandlerTest extends TestCase
         $this->assertCount(1, $spans);
         $this->assertCount(1, $stamps);
 
-        $this->assertArraySubset([
+        $this->assertArraySubset(
+            [
             B3::PARENT_SPAN_ID_NAME => $denormalizedSpan['parentId'],
             B3::TRACE_ID_NAME => $denormalizedSpan['traceId'],
             B3::SPAN_ID_NAME => $denormalizedSpan['id']
-        ],
-        $stamps[0]->getContext());
+            ],
+            $stamps[0]->getContext()
+        );
     }
 }

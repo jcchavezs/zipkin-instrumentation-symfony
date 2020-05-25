@@ -3,7 +3,6 @@
 
 namespace ZipkinBundle\Components\Messenger;
 
-
 use Symfony\Component\Messenger\Envelope;
 
 use Zipkin\Kind;
@@ -25,7 +24,7 @@ class ZipkinSendHandler implements ZipkinHandlerInterface
 
     public function handle(Envelope $envelope): Envelope
     {
-        if($envelope->all(ZipkinStamp::class)) {
+        if ($envelope->all(ZipkinStamp::class)) {
             return $envelope;
         }
 

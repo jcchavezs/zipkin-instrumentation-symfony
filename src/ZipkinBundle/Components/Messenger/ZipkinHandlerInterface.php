@@ -3,7 +3,6 @@
 
 namespace ZipkinBundle\Components\Messenger;
 
-
 use Symfony\Component\Messenger\Envelope;
 use Zipkin\Tracing;
 
