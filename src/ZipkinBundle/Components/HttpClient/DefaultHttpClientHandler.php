@@ -9,7 +9,7 @@ use const Zipkin\Tags\HTTP_STATUS_CODE;
 use const Zipkin\Tags\ERROR;
 use const Zipkin\Tags\HTTP_RESPONSE_SIZE;
 
-class DefaultHttpClientHandler implements DefaultHttpClientHandler
+class DefaultHttpClientHandler implements HttpClientHandler
 {
     public function sampleRequest(string $method, string $url, array $options): ?bool
     {
