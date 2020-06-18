@@ -9,9 +9,14 @@ use const Zipkin\Tags\HTTP_STATUS_CODE;
 use const Zipkin\Tags\ERROR;
 use const Zipkin\Tags\HTTP_RESPONSE_SIZE;
 
-class DefaultHttpClientParser implements HttpClientParser
+class DefaultHttpClientHandler implements DefaultHttpClientHandler
 {
-    public function request(string $method, string $url, array $options, SpanCustomizer $span): void
+    public function sampleRequest(string $method, string $url, array $options): ?bool
+    {
+        return null;
+    }
+
+    public function parseRequest(string $method, string $url, array $options, SpanCustomizer $span): void
     {
         $span->tag(HTTP_METHOD, $method);
         if (false === ($pieces = parse_url($url))) {
@@ -22,7 +27,7 @@ class DefaultHttpClientParser implements HttpClientParser
         }
     }
 
-    public function response(int $responseSize, array $info, SpanCustomizer $span): void
+    public function parseResponse(int $responseSize, array $info, SpanCustomizer $span): void
     {
         if ($info['error'] !== null) {
             $span->tag(ERROR, (string) $info['error']);

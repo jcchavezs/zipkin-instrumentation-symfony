@@ -35,19 +35,19 @@ final class HttpClient implements HttpClientInterface
     private $injector;
 
     /**
-     * @var HttpClientParser
+     * @var HttpClientHandler
      */
-    private $httpParser;
+    private $httpHandler;
 
     public function __construct(
         HttpClientInterface $client,
         Tracing $tracing,
-        HttpClientParser $httpParser = null
+        HttpClientHandler $httpHandler = null
     ) {
         $this->delegate = $client;
         $this->tracer = $tracing->getTracer();
         $this->injector = $tracing->getPropagation()->getInjector(new Map());
-        $this->httpParser = $httpParser ?? new DefaultHttpClientParser();
+        $this->httpHandler = $httpHandler ?? new DefaultHttpClientHandler();
     }
 
     /**
@@ -57,7 +57,10 @@ final class HttpClient implements HttpClientInterface
      */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
-        $span = $this->tracer->nextSpan();
+        $span = $this->tracer->nextSpanWithSampler(
+            [$this->httpHandler, 'sampleRequest'],
+            [$method, $url, $options],
+        );
 
         $headers = $options['headers'] ?? [];
         ($this->injector)($span->getContext(), $headers);
@@ -73,12 +76,12 @@ final class HttpClient implements HttpClientInterface
 
         $span->start();
         $spanCustomizer = new SpanCustomizerShield($span);
-        $this->httpParser->request(strtolower($method), $url, $options, $spanCustomizer);
+        $this->httpHandler->parseRequest(strtolower($method), $url, $options, $spanCustomizer);
 
         try {
             $options['on_progress'] = self::buildOnProgress(
                 $options['on_progress'] ?? null,
-                [$this->httpParser, 'response'],
+                [$this->httpHandler, 'parseResponse'],
                 $spanCustomizer,
                 [$span, 'finish']
             );

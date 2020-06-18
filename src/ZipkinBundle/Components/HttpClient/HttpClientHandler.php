@@ -4,16 +4,26 @@ namespace ZipkinBundle\Components\HttpClient;
 
 use Zipkin\SpanCustomizer;
 
-interface HttpClientParser
+interface HttpClientHandler
 {
     /**
-     * request parses the incoming data related to a request in order to add
+     * sampleRequest decides whether an unsampled request should be reconsidered
+     * as sampled or not.
+     *
+     * @return true means request is sampled
+     * @return false means request remains unsampled (or not decided)
+     * @return null means no changes in sampling
+     */
+    public function sampleRequest(string $method, string $url, array $options): ?bool;
+
+    /**
+     * parseRequest parses the incoming data related to a request in order to add
      * relevant information to the span under the SpanCustomizer interface.
      *
      * Basic data being tagged is HTTP method, HTTP path but other information
      * such as query parameters can be added to enrich the span information.
      */
-    public function request(
+    public function parseRequest(
         string $method,
         string $url,
         array $options,
@@ -21,7 +31,7 @@ interface HttpClientParser
     ): void;
 
     /**
-     * response parses the response data in order to add relevant information
+     * parseResponse parses the response data in order to add relevant information
      * to the span under the SpanCustomizer interface. The following information
      * is available under $info:
      *
@@ -39,5 +49,5 @@ interface HttpClientParser
      * Basic data being tagged is HTTP status code but other information such
      * as any response header or redirect_count can be added.
      */
-    public function response(int $responseSize, array $info, SpanCustomizer $span): void;
+    public function parseResponse(int $responseSize, array $info, SpanCustomizer $span): void;
 }
