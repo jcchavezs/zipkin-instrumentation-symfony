@@ -25,8 +25,8 @@ services:
     tags:
       - { name: kernel.cache_warmer, priority: 0 }
 
-  tracing.symfony_middleware:
-    class: ZipkinBundle\Middleware
+  tracing.symfony_kernel_listener:
+    class: ZipkinBundle\KernelListener
     arguments:
       - "@zipkin.default_tracing"
       - "@logger"
