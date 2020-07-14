@@ -3,28 +3,35 @@
 namespace ZipkinTests\Integration\Reporters\Http;
 
 use Zipkin\TracingBuilder;
-use HttpTest\HttpTestServer;
-use Zipkin\Reporters\InMemory;
-use PHPUnit\Framework\TestCase;
-use RingCentral\Psr7\BufferStream;
 use Zipkin\Samplers\BinarySampler;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Symfony\Component\HttpClient\CurlHttpClient;
-use Symfony\Component\HttpClient\NativeHttpClient;
+use Zipkin\Reporters\InMemory;
+use Zipkin\Instrumentation\Http\Client\HttpClientTracing;
 use ZipkinBundle\Components\HttpClient\HttpClient;
+use ZipkinBundle\Components\HttpClient\DefaultParser;
+use Symfony\Component\HttpClient\NativeHttpClient;
+use Symfony\Component\HttpClient\CurlHttpClient;
+use RingCentral\Psr7\BufferStream;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\RequestInterface;
+use PHPUnit\Framework\TestCase;
+use HttpTest\HttpTestServer;
 
 final class HttpClientTest extends TestCase
 {
-    private function createTracing()
+    private function createHttpTracing(): array
     {
-        $inMemory = new InMemory();
+        $reporter = new InMemory();
         $tracing = TracingBuilder::create()
             ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($inMemory)
+            ->havingReporter($reporter)
             ->build();
 
-        return [$tracing, $inMemory];
+        $httpTracing = new HttpClientTracing($tracing, new DefaultParser);
+
+        return [$httpTracing, static function () use ($tracing, $reporter): array {
+            $tracing->getTracer()->flush();
+            return $reporter->flush();
+        }];
     }
 
     public function testHttpRequestContainsPropagationHeaders()
@@ -43,8 +50,8 @@ final class HttpClientTest extends TestCase
 
         $server->start();
         try {
-            list($tracing, $inMemory) = $this->createTracing();
-            $tracedClient = new HttpClient(new CurlHttpClient(), $tracing);
+            list($httpClientTracing, $flusher) = $this->createHttpTracing();
+            $tracedClient = new HttpClient(new CurlHttpClient(), $httpClientTracing);
             $response = $tracedClient->request("GET", $server->getUrl(), [
                 'headers' => [
                     'x-header-key' => 'header-value',
@@ -52,8 +59,7 @@ final class HttpClientTest extends TestCase
             ]);
             $this->assertEquals(202, $response->getStatusCode());
 
-            $tracing->getTracer()->flush();
-            $spans = $inMemory->flush();
+            $spans = $flusher();
             $this->assertCount(1, $spans);
 
             $span = $spans[0]->toArray();
@@ -77,14 +83,13 @@ final class HttpClientTest extends TestCase
 
         $server->start();
         try {
-            list($tracing, $inMemory) = $this->createTracing();
+            list($httpClientTracing, $flusher) = $this->createHttpTracing();
 
-            $tracedClient = new HttpClient(new CurlHttpClient(), $tracing);
+            $tracedClient = new HttpClient(new CurlHttpClient(), $httpClientTracing);
             $response = $tracedClient->request("GET", $server->getUrl());
             $response->cancel();
 
-            $tracing->getTracer()->flush();
-            $spans = $inMemory->flush();
+            $spans = $flusher();
             $this->assertCount(1, $spans);
             $span = $spans[0]->toArray();
             $this->assertEquals('http/get', $span['name']);
@@ -113,9 +118,9 @@ final class HttpClientTest extends TestCase
 
         $server->start();
         try {
-            list($tracing, $inMemory) = $this->createTracing();
+            list($httpClientTracing, $flusher) = $this->createHttpTracing();
 
-            $httpClient = new HttpClient(new NativeHttpClient(), $tracing);
+            $httpClient = new HttpClient(new NativeHttpClient(), $httpClientTracing);
             $response = $httpClient->request('GET', $server->getUrl());
             $chunks = [];
             foreach ($httpClient->stream($response) as $r => $chunk) {
@@ -124,8 +129,7 @@ final class HttpClientTest extends TestCase
             $this->assertSame($response, $r);
             $this->assertSame('Zipkin is awesome!', implode('', $chunks));
 
-            $tracing->getTracer()->flush();
-            $spans = $inMemory->flush();
+            $spans = $flusher();
             $this->assertCount(1, $spans);
             $span = $spans[0]->toArray();
             $this->assertEquals('http/get', $span['name']);

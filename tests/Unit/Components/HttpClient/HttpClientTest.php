@@ -2,19 +2,37 @@
 
 namespace ZipkinBundle\Tests\Unit\Components\HttpClient;
 
-use Zipkin\Sampler;
 use Zipkin\TracingBuilder;
-use Zipkin\Reporters\InMemory;
-use PHPUnit\Framework\TestCase;
 use Zipkin\Samplers\BinarySampler;
-use Symfony\Component\HttpClient\MockHttpClient;
+use Zipkin\Sampler;
+use Zipkin\Reporters\InMemory;
+use Zipkin\Instrumentation\Http\Client\HttpClientTracing;
 use ZipkinBundle\Components\HttpClient\HttpClient;
+use ZipkinBundle\Components\HttpClient\DefaultParser;
 use Symfony\Component\HttpClient\TraceableHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Exception\ClientException;
+use PHPUnit\Framework\TestCase;
 
 final class HttpClientTest extends TestCase
 {
+    private static function createHttpTracing(Sampler $sampler = null): array
+    {
+        $reporter = new InMemory();
+        $tracing = TracingBuilder::create()
+            ->havingSampler($sampler ?? BinarySampler::createAsAlwaysSample())
+            ->havingReporter($reporter)
+            ->build();
+
+        $httpTracing = new HttpClientTracing($tracing, new DefaultParser);
+
+        return [$httpTracing, static function () use ($tracing, $reporter): array {
+            $tracing->getTracer()->flush();
+            return $reporter->flush();
+        }];
+    }
+
     /**
      * @dataProvider requestInfoForRequestHeaders
      */
@@ -42,12 +60,8 @@ final class HttpClientTest extends TestCase
     ) {
         $response = new MockResponse('', ['http_code' => 200]);
         $client = new TraceableHttpClient(new MockHttpClient($response));
-        $inMemory = new InMemory();
-        $tracing = TracingBuilder::create()
-            ->havingSampler($sampler)
-            ->havingReporter($inMemory)
-            ->build();
-        $tracedClient = new HttpClient($client, $tracing);
+        list($httpTracing) = self::createHttpTracing($sampler);
+        $tracedClient = new HttpClient($client, $httpTracing);
         $tracedClient->request('GET', 'http://test.com', $requestOptions);
         $requestHeaders = $client->getTracedRequests()[0]['options']['headers'];
         foreach ($expectedRequestHeaders as $header) {
@@ -73,15 +87,10 @@ final class HttpClientTest extends TestCase
     {
         $response = new MockResponse('', ['http_code' => 200]);
         $client = new MockHttpClient($response);
-        $inMemory = new InMemory();
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($inMemory)
-            ->build();
-        $tracedClient = new HttpClient($client, $tracing);
+        list($httpTracing, $flusher) = self::createHttpTracing();
+        $tracedClient = new HttpClient($client, $httpTracing);
         $response = $tracedClient->request('GET', 'http://test.com');
-        $tracing->getTracer()->flush();
-        $spans = $inMemory->flush();
+        $spans = $flusher();
         $this->assertCount(1, $spans);
         $span = $spans[0]->toArray();
         $this->assertEquals('http/get', $span['name']);
@@ -92,12 +101,8 @@ final class HttpClientTest extends TestCase
     {
         $response = new MockResponse('', ['http_code' => 403]);
         $client = new MockHttpClient($response);
-        $inMemory = new InMemory();
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($inMemory)
-            ->build();
-        $tracedClient = new HttpClient($client, $tracing);
+        list($httpTracing, $flusher) = self::createHttpTracing();
+        $tracedClient = new HttpClient($client, $httpTracing);
         $response = $tracedClient->request('GET', 'http://test.com');
         try {
             $response->getContent();
@@ -105,8 +110,7 @@ final class HttpClientTest extends TestCase
         } catch (ClientException $e) {
         }
 
-        $tracing->getTracer()->flush();
-        $spans = $inMemory->flush();
+        $spans = $flusher();
         $this->assertCount(1, $spans);
         $span = $spans[0]->toArray();
         $this->assertEquals('http/get', $span['name']);

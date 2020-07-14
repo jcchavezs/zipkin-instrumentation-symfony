@@ -2,20 +2,20 @@
 
 namespace ZipkinBundle\Components\HttpClient;
 
-use Generator;
-use Throwable;
-use TypeError;
 use Zipkin\Tracer;
-use Zipkin\Tracing;
-use Zipkin\SpanCustomizer;
-use Zipkin\Propagation\Map;
-use const Zipkin\Tags\ERROR;
 use Zipkin\SpanCustomizerShield;
+use Zipkin\SpanCustomizer;
+use Zipkin\Span;
+use Zipkin\Propagation\Map;
+use Zipkin\Instrumentation\Http\Client\Parser;
+use Zipkin\Instrumentation\Http\Client\HttpClientTracing;
+use TypeError;
+use Throwable;
+use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Component\HttpClient\Response\ResponseStream;
-use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Component\HttpClient\Response\ResponseStream;
 
 final class HttpClient implements HttpClientInterface
 {
@@ -30,24 +30,29 @@ final class HttpClient implements HttpClientInterface
     private $tracer;
 
     /**
-     * @var callable
+     * @var callable(TraceContext,array):void
      */
     private $injector;
 
     /**
-     * @var HttpClientParser
+     * @var Parser
      */
-    private $httpParser;
+    private $parser;
+
+    /**
+     * @var (callable(array):?bool)|null
+     */
+    private $requestSampler;
 
     public function __construct(
         HttpClientInterface $client,
-        Tracing $tracing,
-        HttpClientParser $httpParser = null
+        HttpClientTracing $tracing
     ) {
         $this->delegate = $client;
-        $this->tracer = $tracing->getTracer();
-        $this->injector = $tracing->getPropagation()->getInjector(new Map());
-        $this->httpParser = $httpParser ?? new DefaultHttpClientParser();
+        $this->tracer = $tracing->getTracing()->getTracer();
+        $this->injector = $tracing->getTracing()->getPropagation()->getInjector(new Map());
+        $this->parser = $tracing->getParser();
+        $this->requestSampler = $tracing->getRequestSampler();
     }
 
     /**
@@ -57,8 +62,14 @@ final class HttpClient implements HttpClientInterface
      */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
-        $span = $this->tracer->nextSpan();
-
+        if ($this->requestSampler === null) {
+            $span = $this->tracer->nextSpan();
+        } else {
+            $span = $this->tracer->nextSpanWithSampler(
+                $this->requestSampler,
+                [[$method, $url, $options]]
+            );
+        }
         $headers = $options['headers'] ?? [];
         ($this->injector)($span->getContext(), $headers);
         $options['headers'] = $headers;
@@ -73,12 +84,13 @@ final class HttpClient implements HttpClientInterface
 
         $span->start();
         $spanCustomizer = new SpanCustomizerShield($span);
-        $this->httpParser->request(strtolower($method), $url, $options, $spanCustomizer);
+        $this->parser->request([$method, $url, $options], $span->getContext(), $spanCustomizer);
 
         try {
             $options['on_progress'] = self::buildOnProgress(
                 $options['on_progress'] ?? null,
-                [$this->httpParser, 'response'],
+                [$this->parser, 'response'],
+                $span,
                 $spanCustomizer,
                 [$span, 'finish']
             );
@@ -94,7 +106,7 @@ final class HttpClient implements HttpClientInterface
             // Since response is an asynchronus operation, according to
             // HttpClientInterface::request, this exception can only happen
             // if an unsopported option is passed.
-            $span->tag(ERROR, $e->getMessage());
+            $span->setError($e);
             $span->finish();
             throw $e;
         }
@@ -109,6 +121,7 @@ final class HttpClient implements HttpClientInterface
     private static function buildOnProgress(
         ?callable $delegateOnProgress,
         callable $httpParserResponse,
+        Span $span,
         SpanCustomizer $spanCustomizer,
         callable $spanCloser
     ): callable {
@@ -119,6 +132,7 @@ final class HttpClient implements HttpClientInterface
         ) use (
             $delegateOnProgress,
             $httpParserResponse,
+            $span,
             $spanCustomizer,
             $spanCloser
         ): void {
@@ -128,7 +142,7 @@ final class HttpClient implements HttpClientInterface
                 } catch (Throwable $e) {
                     // According to HttpClientInterface, throwing any exceptions
                     // MUST abort the request, hence we finish the span in here.
-                    $spanCustomizer->tag(ERROR, $e->getMessage());
+                    $span->setError($e);
                     ($spanCloser)();
                     throw $e;
                 }
@@ -136,7 +150,7 @@ final class HttpClient implements HttpClientInterface
 
             if ($info['error'] !== null || $info['http_code'] > 199) {
                 // any of these three conditions represent the finalization of the request
-                ($httpParserResponse)($dlSize, $info, $spanCustomizer);
+                ($httpParserResponse)([$dlSize, $info], $span->getContext(), $spanCustomizer);
                 ($spanCloser)();
             }
         };
