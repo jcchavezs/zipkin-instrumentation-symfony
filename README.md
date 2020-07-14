@@ -7,7 +7,7 @@
 [![Total Downloads](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/downloads)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 [![License](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/license)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 
-A Zipkin integration for Symfony applications
+A Zipkin instrumentation for Symfony applications
 
 ## Installation
 
