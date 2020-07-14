@@ -17,15 +17,15 @@ composer require jcchavezs/zipkin-instrumentation-symfony
 
 ## Getting started
 
-This Symfony bundle provides a middleware that can be used to trace
+This Symfony bundle provides a kernel listener that can be used to trace
 HTTP requests. In order to use it, it is important that you declare 
-the middleware by adding this to `app/config/services.yml` or any other
+the listener by adding this to `app/config/services.yml` or any other
 [dependency injection](https://symfony.com/doc/current/components/dependency_injection.html) declaration.
 
 ```yaml
 services:
-  tracing_middleware:
-    class: ZipkinBundle\Middleware
+  tracing_kernel_listener:
+    class: ZipkinBundle\KernelListener
     arguments:
       - "@zipkin.default_tracing"
       - "@logger"
@@ -138,8 +138,8 @@ useful when you need to add tags like instance name.
 
 ```yaml
 services:
-  tracing_middleware:
-    class: ZipkinBundle\Middleware
+  tracing_kernel_listener:
+    class: ZipkinBundle\KernelListener
     arguments:
       - "@zipkin.default_tracing"
       - "@logger"
@@ -155,12 +155,12 @@ services:
 
 Although this bundle provides a tracer based on the configuration parameters
 under the `zipkin` node, you can inject your own `tracing component` to the 
-middleware as long as it implements the `Zipkin\Tracing` interface:
+kernel listener as long as it implements the `Zipkin\Tracing` interface:
 
 ```yaml
 services:
-  tracing_middleware:
-    class: ZipkinBundle\Middleware
+  tracing_kernel_listener:
+    class: ZipkinBundle\KernelListener
     arguments:
       - "@my_own_tracing"
       - "@logger"
@@ -177,7 +177,7 @@ Span customizers allow the user to add custom information to the span based on
 the request. For example by default the span name is being defined by the HTTP 
 verb. This approach is a not so bad option seeking for low cardinality in span 
 naming. A more useful approach is to use the route path: `/user/{user_id}` however
-including the `@router` in the middleware is expensive and reduces its performance
+including the `@router` in the kernel listener is expensive and reduces its performance
 thus the best is to precompile (aka cache warm up) a map of `name => path` in cache
 that can be used to resolve the path in runtime.
 
@@ -196,8 +196,8 @@ services:
     tags:
       - { name: kernel.cache_warmer, priority: 0 }
 
-  tracing_middleware:
-    class: ZipkinBundle\Middleware
+  tracing_kernel_listener:
+    class: ZipkinBundle\KernelListener
     arguments:
       - "@zipkin.default_tracing"
       - "@logger"

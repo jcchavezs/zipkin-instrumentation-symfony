@@ -37,7 +37,7 @@ echo "Installing web-server-bundle"
 # web-server-bundle:4.4 supports ^3.4, ^4.0 and ^5.0 (see https://github.com/symfony/web-server-bundle/blob/4.4/composer.json#L23)
 ${COMPOSER_RUNNER} require symfony/web-server-bundle:"^${SYMFONY_VERSION}|^4.4" --dev
 
-# includes configuration files to run the middleware in the app
+# includes configuration files to run the kernel listener in the app
 cp ../tracing.${SAMPLER}.yaml ./config/tracing.yaml
 cp ../HealthController.php ./src/Controller
 mkdir ./src/Sampler && cp ../CustomSampler.php ./src/Sampler

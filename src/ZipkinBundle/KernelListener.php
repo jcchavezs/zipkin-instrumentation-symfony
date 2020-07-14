@@ -19,13 +19,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Psr\Log\LoggerInterface;
 use Exception;
 
-/**
- * @deprecated use KernelListener instead.
- */
-
-final class Middleware
+final class KernelListener
 {
-    const SCOPE_CLOSER_KEY = 'zipkin_bundle_scope_closer';
+    private const SCOPE_CLOSER_KEY = 'zipkin_bundle_scope_closer';
 
     /**
      * @var Tracer

@@ -2,23 +2,23 @@
 
 namespace ZipkinBundle\Tests\Unit;
 
-use Exception;
-use Psr\Log\NullLogger;
 use Zipkin\TracingBuilder;
-use ZipkinBundle\Middleware;
-use PHPUnit\Framework\TestCase;
 use Zipkin\Samplers\BinarySampler;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\KernelInterface;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
-use Symfony\Component\HttpKernel\Event\KernelEvent;
-use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use ZipkinBundle\KernelListener;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
+use Psr\Log\NullLogger;
+use PHPUnit\Framework\TestCase;
+use Exception;
 
-final class MiddlewareTest extends TestCase
+final class KernelListenerTest extends TestCase
 {
     const HTTP_HOST = 'localhost';
     const HTTP_METHOD = 'OPTIONS';
@@ -32,12 +32,12 @@ final class MiddlewareTest extends TestCase
         $tracing = TracingBuilder::create()->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $this->assertNull($tracing->getTracer()->getCurrentSpan());
     }
@@ -51,7 +51,7 @@ final class MiddlewareTest extends TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger, [self::TAG_KEY => self::TAG_VALUE]);
+        $kernelListener = new KernelListener($tracing, $logger, [self::TAG_KEY => self::TAG_VALUE]);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -63,7 +63,7 @@ final class MiddlewareTest extends TestCase
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
@@ -92,13 +92,13 @@ final class MiddlewareTest extends TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
         $event->getRequest()->willReturn(new Request());
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $exceptionEvent = new ExceptionEvent(
             $this->mockKernel(),
@@ -107,7 +107,7 @@ final class MiddlewareTest extends TestCase
             new Exception()
         );
 
-        $middleware->onKernelException($exceptionEvent);
+        $kernelListener->onKernelException($exceptionEvent);
 
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
@@ -122,13 +122,13 @@ final class MiddlewareTest extends TestCase
             ->havingReporter($reporter)
             ->build();
         $logger = new NullLogger();
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn(new Request());
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $exceptionEvent = new ExceptionEvent(
             $this->mockKernel(),
@@ -137,7 +137,7 @@ final class MiddlewareTest extends TestCase
             new Exception(self::EXCEPTION_MESSAGE)
         );
 
-        $middleware->onKernelException($exceptionEvent);
+        $kernelListener->onKernelException($exceptionEvent);
 
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
@@ -158,13 +158,13 @@ final class MiddlewareTest extends TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
         $event->getRequest()->willReturn(new Request());
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $terminateEvent = new TerminateEvent(
             $this->mockKernel(),
@@ -172,7 +172,7 @@ final class MiddlewareTest extends TestCase
             new Response()
         );
 
-        $middleware->onKernelTerminate($terminateEvent);
+        $kernelListener->onKernelTerminate($terminateEvent);
         $spans = $reporter->flush();
         $this->assertCount(0, $spans);
     }
@@ -199,7 +199,7 @@ final class MiddlewareTest extends TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -211,7 +211,7 @@ final class MiddlewareTest extends TestCase
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $responseEvent = new ResponseEvent(
             $this->mockKernel(),
@@ -220,7 +220,7 @@ final class MiddlewareTest extends TestCase
             new Response('', $responseStatusCode)
         );
 
-        $middleware->onKernelResponse($responseEvent);
+        $kernelListener->onKernelResponse($responseEvent);
 
         $assertTags = [
             'http.host' => self::HTTP_HOST,
@@ -246,7 +246,7 @@ final class MiddlewareTest extends TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $request = new Request();
 
@@ -254,7 +254,7 @@ final class MiddlewareTest extends TestCase
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $responseEvent = new ResponseEvent(
             $this->mockKernel(),
@@ -265,7 +265,7 @@ final class MiddlewareTest extends TestCase
 
         $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
 
-        $middleware->onKernelResponse($responseEvent);
+        $kernelListener->onKernelResponse($responseEvent);
 
         $this->assertNull($tracing->getTracer()->getCurrentSpan());
     }
@@ -282,7 +282,7 @@ final class MiddlewareTest extends TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -294,7 +294,7 @@ final class MiddlewareTest extends TestCase
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $responseEvent = new TerminateEvent(
             $this->mockKernel(),
@@ -302,7 +302,7 @@ final class MiddlewareTest extends TestCase
             new Response('', $responseStatusCode)
         );
 
-        $middleware->onKernelTerminate($responseEvent);
+        $kernelListener->onKernelTerminate($responseEvent);
 
         $assertTags = [
             'http.host' => self::HTTP_HOST,
@@ -329,7 +329,7 @@ final class MiddlewareTest extends TestCase
             ->build();
         $logger = new NullLogger();
 
-        $middleware = new Middleware($tracing, $logger);
+        $kernelListener = new KernelListener($tracing, $logger);
 
         $request = new Request();
 
@@ -337,7 +337,7 @@ final class MiddlewareTest extends TestCase
         $event->isMasterRequest()->willReturn(true);
         $event->getRequest()->willReturn($request);
 
-        $middleware->onKernelRequest($event->reveal());
+        $kernelListener->onKernelRequest($event->reveal());
 
         $responseEvent = new TerminateEvent(
             $this->mockKernel(),
@@ -347,7 +347,7 @@ final class MiddlewareTest extends TestCase
 
         $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
 
-        $middleware->onKernelTerminate($responseEvent);
+        $kernelListener->onKernelTerminate($responseEvent);
 
         $this->assertNull($tracing->getTracer()->getCurrentSpan());
     }
