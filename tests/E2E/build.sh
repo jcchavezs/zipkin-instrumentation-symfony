@@ -40,6 +40,7 @@ ${COMPOSER_RUNNER} require symfony/web-server-bundle:"^${SYMFONY_VERSION}|^4.4" 
 
 # includes messenger files
 mkdir ./src/Message && cp ../TestMessage.php ./src/Message
+mkdir ./src/MessageHandler && cp ../TestMessageHandler.php ./src/MessageHandler
 cp ../messenger.yaml ./config/packages/messenger.yaml
 
 # includes configuration files to run the middleware in the app
