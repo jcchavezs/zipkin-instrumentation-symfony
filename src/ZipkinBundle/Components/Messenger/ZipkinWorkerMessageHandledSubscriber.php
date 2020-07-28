@@ -3,7 +3,6 @@
 
 namespace ZipkinBundle\Components\Messenger;
 
-
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
 use Zipkin\Tracing;
