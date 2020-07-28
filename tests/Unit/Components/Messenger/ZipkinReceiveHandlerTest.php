@@ -10,7 +10,7 @@ use Zipkin\Tracing;
 use Zipkin\TracingBuilder;
 use ZipkinBundle\Components\Messenger\ZipkinReceiveHandler;
 use PHPUnit\Framework\TestCase;
-use ZipkinBundle\Components\Messenger\ZipkinStamp;
+use ZipkinBundle\Components\Messenger\B3Stamp;
 
 class ZipkinReceiveHandlerTest extends TestCase
 {

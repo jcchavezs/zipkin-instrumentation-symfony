@@ -10,7 +10,7 @@ use Zipkin\Tracing;
 use Zipkin\TracingBuilder;
 use ZipkinBundle\Components\Messenger\ZipkinSendHandler;
 use PHPUnit\Framework\TestCase;
-use ZipkinBundle\Components\Messenger\ZipkinStamp;
+use ZipkinBundle\Components\Messenger\B3Stamp;
 
 class ZipkinSendHandlerTest extends TestCase
 {
@@ -22,6 +22,10 @@ class ZipkinSendHandlerTest extends TestCase
      * @var InMemoryReporter
      */
     private $reporter;
+    /**
+     * @var B3
+     */
+    private $b3;
 
     protected function setUp()
     {
@@ -30,14 +34,15 @@ class ZipkinSendHandlerTest extends TestCase
             ->havingSampler(BinarySampler::createAsAlwaysSample())
             ->havingReporter($this->reporter)
             ->build();
+        $this->b3 = new B3;
     }
 
     public function testSkipHandlerIfStampAlreadyExists()
     {
         $message = new \stdClass();
-        $envelope = new Envelope($message, [new ZipkinStamp()]);
+        $envelope = new Envelope($message, [new B3Stamp()]);
 
-        $sut = new ZipkinSendHandler($this->tracing);
+        $sut = new ZipkinSendHandler($this->tracing, $this->b3);
 
         $sut->handle($envelope);
 
@@ -48,7 +53,7 @@ class ZipkinSendHandlerTest extends TestCase
         $message = new \stdClass();
         $envelope = new Envelope($message);
 
-        $sut = new ZipkinSendHandler($this->tracing);
+        $sut = new ZipkinSendHandler($this->tracing, $this->b3);
 
         $sut->handle($envelope);
 
@@ -62,8 +67,9 @@ class ZipkinSendHandlerTest extends TestCase
     {
         $message = new \stdClass();
         $envelope = new Envelope($message);
+        $carrier = [];
 
-        $sut = new ZipkinSendHandler($this->tracing);
+        $sut = new ZipkinSendHandler($this->tracing, $this->b3);
 
         $newEnvelope = $sut->handle($envelope);
 
@@ -71,19 +77,14 @@ class ZipkinSendHandlerTest extends TestCase
         $spans = $this->reporter->flush();
         $denormalizedSpan = $spans[0]->toArray();
 
-        /** @var []ZipkinStamp $stamps */
-        $stamps = $newEnvelope->all(ZipkinStamp::class);
+        /** @var []B3Stamp $stamps */
+        $stamps = $newEnvelope->all(B3Stamp::class);
 
         $this->assertCount(1, $spans);
         $this->assertCount(1, $stamps);
 
-        $this->assertArraySubset(
-            [
-            B3::PARENT_SPAN_ID_NAME => $denormalizedSpan['parentId'],
-            B3::TRACE_ID_NAME => $denormalizedSpan['traceId'],
-            B3::SPAN_ID_NAME => $denormalizedSpan['id']
-            ],
-            $stamps[0]->getContext()
-        );
+        $singleValueHeader = sprintf("%s-%s-%d", $denormalizedSpan['traceId'], $denormalizedSpan['id'], 1);
+
+        $this->assertEquals($singleValueHeader, $stamps[0]->get($carrier, 'b3'));
     }
 }

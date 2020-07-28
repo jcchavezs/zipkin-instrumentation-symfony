@@ -27,7 +27,7 @@ class ZipkinReceiveHandler implements ZipkinHandlerInterface
 
     public function handle(Envelope $envelope): Envelope
     {
-        $stamp = $envelope->last(ZipkinStamp::class);
+        $stamp = $envelope->last(B3Stamp::class);
         if (null !== $stamp) {
             $span = $this->tracer->nextSpan(($this->extractor)($stamp->getContext()));
         } else {
