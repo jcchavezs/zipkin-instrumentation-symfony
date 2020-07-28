@@ -10,7 +10,7 @@ use Zipkin\Propagation\B3;
 use Zipkin\Tags;
 use Zipkin\Tracing;
 
-class ZipkinSendHandler implements ZipkinHandlerInterface
+class ZipkinSendHandler
 {
     /**
      * @var \Zipkin\Tracer

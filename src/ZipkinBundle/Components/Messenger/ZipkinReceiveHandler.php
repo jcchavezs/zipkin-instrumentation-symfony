@@ -9,7 +9,7 @@ use Zipkin\Propagation\Getter;
 use Zipkin\Kind;
 use Zipkin\Tracing;
 
-class ZipkinReceiveHandler implements ZipkinHandlerInterface
+class ZipkinReceiveHandler
 {
     /**
      * @var \Zipkin\Tracer

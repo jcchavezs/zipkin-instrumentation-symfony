@@ -10,15 +10,15 @@ use Symfony\Component\Messenger\Stamp\ReceivedStamp;
 class ZipkinMiddleware implements MiddlewareInterface
 {
     /**
-     * @var ZipkinHandlerInterface
+     * @var ZipkinSendHandler
      */
     private $sendHandler;
     /**
-     * @var ZipkinHandlerInterface
+     * @var ZipkinReceiveHandler
      */
     private $receiveHandler;
 
-    public function __construct(ZipkinHandlerInterface $sendHandler, ZipkinHandlerInterface $receiveHandler)
+    public function __construct(ZipkinSendHandler $sendHandler, ZipkinReceiveHandler $receiveHandler)
     {
         $this->sendHandler = $sendHandler;
         $this->receiveHandler = $receiveHandler;

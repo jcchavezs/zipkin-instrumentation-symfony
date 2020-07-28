@@ -8,9 +8,10 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
 use Symfony\Component\Messenger\Stamp\ReceivedStamp;
-use ZipkinBundle\Components\Messenger\ZipkinHandlerInterface;
 use ZipkinBundle\Components\Messenger\ZipkinMiddleware;
 use PHPUnit\Framework\TestCase;
+use ZipkinBundle\Components\Messenger\ZipkinReceiveHandler;
+use ZipkinBundle\Components\Messenger\ZipkinSendHandler;
 
 class ZipkinMiddlewareTest extends TestCase
 {
@@ -19,12 +20,12 @@ class ZipkinMiddlewareTest extends TestCase
         $message = new \stdClass();
         $envelope = new Envelope($message);
 
-        /** @var ObjectProphecy|ZipkinHandlerInterface $sendHandler */
-        $sendHandler = $this->prophesize(ZipkinHandlerInterface::class);
+        /** @var ObjectProphecy|ZipkinSendHandler $sendHandler */
+        $sendHandler = $this->prophesize(ZipkinSendHandler::class);
         $sendHandler->handle($envelope)->shouldBeCalledOnce()->willReturn($envelope);
         
-        /** @var ObjectProphecy|ZipkinHandlerInterface $receiveHandler */
-        $receiveHandler = $this->prophesize(ZipkinHandlerInterface::class);
+        /** @var ObjectProphecy|ZipkinReceiveHandler $receiveHandler */
+        $receiveHandler = $this->prophesize(ZipkinReceiveHandler::class);
         $receiveHandler->handle($envelope)->shouldBeCalledTimes(0);
 
         $stack = $this->prophesize(StackInterface::class);
@@ -42,11 +43,11 @@ class ZipkinMiddlewareTest extends TestCase
         $message = new \stdClass();
         $envelope = new Envelope($message, [new ReceivedStamp('default_bus')]);
 
-        /** @var ObjectProphecy|ZipkinHandlerInterface $sendHandler */
-        $sendHandler = $this->prophesize(ZipkinHandlerInterface::class);
+        /** @var ObjectProphecy|ZipkinSendHandler $sendHandler */
+        $sendHandler = $this->prophesize(ZipkinSendHandler::class);
         $sendHandler->handle($envelope)->shouldBeCalledTimes(0);
-        /** @var ObjectProphecy|ZipkinHandlerInterface $receiveHandler */
-        $receiveHandler = $this->prophesize(ZipkinHandlerInterface::class);
+        /** @var ObjectProphecy|ZipkinReceiveHandler $receiveHandler */
+        $receiveHandler = $this->prophesize(ZipkinReceiveHandler::class);
         $receiveHandler->handle($envelope)->shouldBeCalledOnce()->willReturn($envelope);
 
         $stack = $this->prophesize(StackInterface::class);
