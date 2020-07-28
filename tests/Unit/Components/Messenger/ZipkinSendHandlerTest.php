@@ -22,10 +22,6 @@ class ZipkinSendHandlerTest extends TestCase
      * @var InMemoryReporter
      */
     private $reporter;
-    /**
-     * @var B3
-     */
-    private $b3;
 
     protected function setUp()
     {
@@ -42,7 +38,7 @@ class ZipkinSendHandlerTest extends TestCase
         $message = new \stdClass();
         $envelope = new Envelope($message, [new B3Stamp()]);
 
-        $sut = new ZipkinSendHandler($this->tracing, $this->b3);
+        $sut = new ZipkinSendHandler($this->tracing);
 
         $sut->handle($envelope);
 
@@ -53,7 +49,7 @@ class ZipkinSendHandlerTest extends TestCase
         $message = new \stdClass();
         $envelope = new Envelope($message);
 
-        $sut = new ZipkinSendHandler($this->tracing, $this->b3);
+        $sut = new ZipkinSendHandler($this->tracing);
 
         $sut->handle($envelope);
 
@@ -67,9 +63,8 @@ class ZipkinSendHandlerTest extends TestCase
     {
         $message = new \stdClass();
         $envelope = new Envelope($message);
-        $carrier = [];
 
-        $sut = new ZipkinSendHandler($this->tracing, $this->b3);
+        $sut = new ZipkinSendHandler($this->tracing);
 
         $newEnvelope = $sut->handle($envelope);
 
@@ -85,6 +80,6 @@ class ZipkinSendHandlerTest extends TestCase
 
         $singleValueHeader = sprintf("%s-%s-%d", $denormalizedSpan['traceId'], $denormalizedSpan['id'], 1);
 
-        $this->assertEquals($singleValueHeader, $stamps[0]->get($carrier, 'b3'));
+        $this->assertEquals($singleValueHeader, $stamps[0]->get('b3'));
     }
 }

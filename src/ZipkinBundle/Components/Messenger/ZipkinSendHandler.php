@@ -17,14 +17,14 @@ class ZipkinSendHandler
      */
     private $tracer;
     /**
-     * @var B3
+     * @var callable
      */
-    private $b3;
+    private $injector;
 
-    public function __construct(Tracing $tracing, B3 $b3)
+    public function __construct(Tracing $tracing)
     {
         $this->tracer = $tracing->getTracer();
-        $this->b3 = $b3;
+        $this->injector = $tracing->getPropagation()->getInjector(new PropagationStamp());
     }
 
     public function handle(Envelope $envelope): Envelope
@@ -41,9 +41,7 @@ class ZipkinSendHandler
         $span->setName('SEND_MESSAGE_'.(new \ReflectionClass($envelope->getMessage()))->getShortName());
 
         $stamp = new B3Stamp;
-        $injector = $this->b3->getInjector($stamp);
-        $carrier = [];
-        $injector($span->getContext(), $carrier);
+        ($this->injector)($span->getContext(), $stamp);
 
         return $envelope->with($stamp);
     }
