@@ -13,5 +13,8 @@ run-zipkin: ## Runs zipkin server
 run-rabbitmq: ## Runs rabbitmq server
 	docker run -d -p 5672:5672 -p 15672:15672 rabbitmq:3.8-management-alpine
 
+run-consumer: ## Runs messenger consumer
+	php ./test-app/bin/console messenger:consume
+
 clean:
 	rm -rf test-app
