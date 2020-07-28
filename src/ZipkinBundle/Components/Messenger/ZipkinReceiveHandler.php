@@ -4,7 +4,8 @@
 namespace ZipkinBundle\Components\Messenger;
 
 use Symfony\Component\Messenger\Envelope;
-use Zipkin\Propagation\Map;
+use Zipkin\Propagation\B3;
+use Zipkin\Propagation\Getter;
 use Zipkin\Kind;
 use Zipkin\Tracing;
 
@@ -15,21 +16,23 @@ class ZipkinReceiveHandler implements ZipkinHandlerInterface
      */
     private $tracer;
     /**
-     * @var callable
+     * @var B3
      */
-    private $extractor;
+    private $b3;
 
-    public function __construct(Tracing $tracing)
+    public function __construct(Tracing $tracing, B3 $b3)
     {
         $this->tracer = $tracing->getTracer();
-        $this->extractor = $tracing->getPropagation()->getExtractor(new Map());
+        $this->b3 = $b3;
     }
 
     public function handle(Envelope $envelope): Envelope
     {
+        /** @var Getter|B3Stamp $stamp */
         $stamp = $envelope->last(B3Stamp::class);
         if (null !== $stamp) {
-            $span = $this->tracer->nextSpan(($this->extractor)($stamp->getContext()));
+            $carrier = [];
+            $span = $this->tracer->nextSpan(($this->b3->getExtractor($stamp))($carrier));
         } else {
             $span = $this->tracer->nextSpan();
         }

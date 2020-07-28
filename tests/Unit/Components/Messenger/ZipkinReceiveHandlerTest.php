@@ -4,6 +4,7 @@ namespace ZipkinBundle\Tests\Unit\Components\Messenger;
 
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Stamp\ReceivedStamp;
+use Zipkin\Propagation\B3;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Tracing;
@@ -22,6 +23,10 @@ class ZipkinReceiveHandlerTest extends TestCase
      * @var InMemoryReporter
      */
     private $reporter;
+    /**
+     * @var B3
+     */
+    private $b3;
 
     protected function setUp()
     {
@@ -30,6 +35,7 @@ class ZipkinReceiveHandlerTest extends TestCase
             ->havingSampler(BinarySampler::createAsAlwaysSample())
             ->havingReporter($this->reporter)
             ->build();
+        $this->b3 = new B3();
     }
 
     public function testGenerateSpanIfNotAlreadyInitialized()
@@ -37,7 +43,7 @@ class ZipkinReceiveHandlerTest extends TestCase
         $message = new \stdClass();
         $envelope = new Envelope($message, [new ReceivedStamp('default.bus')]);
 
-        $sut = new ZipkinReceiveHandler($this->tracing);
+        $sut = new ZipkinReceiveHandler($this->tracing, $this->b3);
 
         $sut->handle($envelope);
 
