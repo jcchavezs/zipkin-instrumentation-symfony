@@ -38,7 +38,7 @@ class ZipkinSendHandler implements ZipkinHandlerInterface
 
         $span->setKind(Kind\PRODUCER);
         $span->tag(Tags\LOCAL_COMPONENT, 'symfony');
-        $span->setName(get_class($envelope->getMessage()));
+        $span->setName('SEND_MESSAGE_'.(new \ReflectionClass($envelope->getMessage()))->getShortName());
 
         $stamp = new B3Stamp;
         $injector = $this->b3->getInjector($stamp);

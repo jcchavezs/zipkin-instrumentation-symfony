@@ -29,7 +29,11 @@ services:
       - "@zipkin.messenger.send_handler"
       - "@zipkin.messenger.send_handler"
 
+  zipkin.default_b3:
+    class: Zipkin\Propagation\B3
+
   zipkin.messenger.send_handler:
     class: ZipkinBundle\Components\Messenger\ZipkinSendHandler
     arguments:
       - "@zipkin.default_tracing"
+      - "@zipkin.default_b3"
