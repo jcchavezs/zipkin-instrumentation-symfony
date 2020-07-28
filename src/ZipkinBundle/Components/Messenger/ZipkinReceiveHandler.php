@@ -15,15 +15,11 @@ class ZipkinReceiveHandler
      * @var \Zipkin\Tracer
      */
     private $tracer;
-    /**
-     * @var B3
-     */
-    private $b3;
 
-    public function __construct(Tracing $tracing, B3 $b3)
+    public function __construct(Tracing $tracing)
     {
         $this->tracer = $tracing->getTracer();
-        $this->b3 = $b3;
+        $this->extractor = $tracing->getPropagation()->getExtractor(new PropagationStamp());
     }
 
     public function handle(Envelope $envelope): Envelope
@@ -31,8 +27,7 @@ class ZipkinReceiveHandler
         /** @var Getter|B3Stamp $stamp */
         $stamp = $envelope->last(B3Stamp::class);
         if (null !== $stamp) {
-            $carrier = [];
-            $span = $this->tracer->nextSpan(($this->b3->getExtractor($stamp))($carrier));
+            $span = $this->tracer->nextSpan(($this->extractor)($stamp));
         } else {
             $span = $this->tracer->nextSpan();
         }

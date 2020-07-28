@@ -27,13 +27,14 @@ services:
     public: true
     arguments:
       - "@zipkin.messenger.send_handler"
-      - "@zipkin.messenger.send_handler"
-
-  zipkin.default_b3:
-    class: Zipkin\Propagation\B3
+      - "@zipkin.messenger.receive_handler"
 
   zipkin.messenger.send_handler:
     class: ZipkinBundle\Components\Messenger\ZipkinSendHandler
     arguments:
       - "@zipkin.default_tracing"
-      - "@zipkin.default_b3"
+
+  zipkin.messenger.receive_handler:
+    class: ZipkinBundle\Components\Messenger\ZipkinReceiveHandler
+    arguments:
+      - "@zipkin.default_tracing"
