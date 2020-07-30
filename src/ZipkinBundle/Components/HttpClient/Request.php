@@ -63,10 +63,7 @@ final class Request extends ClientRequest
      */
     public function getHeader(string $name): ?string
     {
-        if (
-            array_key_exists('headers', $this->options)
-            && array_key_exists($name, $this->options['headers'])
-        ) {
+        if (array_key_exists('headers', $this->options) && array_key_exists($name, $this->options['headers'])) {
             return $this->options['headers'][$name];
         }
 

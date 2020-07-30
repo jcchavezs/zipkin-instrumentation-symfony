@@ -82,7 +82,7 @@ final class HttpClient implements HttpClientInterface
                 $parseRequest,
                 [$this->httpParser, 'response'],
                 $span,
-                $spanCustomizer,
+                $spanCustomizer
             );
 
             // Since the cancel event is not being catched by the on_progress
