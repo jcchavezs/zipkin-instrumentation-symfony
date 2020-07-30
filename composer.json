@@ -7,7 +7,7 @@
         "symfony/http-kernel": "^4.4|^5.0",
         "symfony/routing": "^4.4|^5.0",
         "symfony/dependency-injection": "^4.4|^5.0",
-        "openzipkin/zipkin": "dev-master"
+        "openzipkin/zipkin": "2.0.x-dev"
     },
     "require-dev": {
         "jcchavezs/httptest": "~0.2",
@@ -30,7 +30,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "ZipkinBundle\\Tests\\": "./tests/"
+            "ZipkinBundle\\Tests\\": "./tests/",
+            "ZipkinTests\\Unit\\Instrumentation\\Http\\": "./vendor/openzipkin/zipkin/tests/Unit/Instrumentation/Http/"
         }
     },
     "scripts": {
