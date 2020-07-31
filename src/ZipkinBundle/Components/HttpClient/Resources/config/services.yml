@@ -1,0 +1,6 @@
+services:
+  zipkin.default_http_client_tracing:
+    class: Zipkin\Instrumentation\Http\Client\HttpClientTracing
+    public: true
+    arguments:
+      - "@zipkin.default_tracing"

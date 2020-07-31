@@ -2,20 +2,21 @@
 
 namespace ZipkinBundle\Components\HttpClient;
 
-use Generator;
-use Throwable;
-use TypeError;
 use Zipkin\Tracer;
-use Zipkin\Tracing;
-use Zipkin\SpanCustomizer;
-use Zipkin\Propagation\Map;
-use const Zipkin\Tags\ERROR;
 use Zipkin\SpanCustomizerShield;
+use Zipkin\SpanCustomizer;
+use Zipkin\Span;
+use Zipkin\Propagation\TraceContext;
+use Zipkin\Propagation\Map;
+use Zipkin\Instrumentation\Http\Client\Parser;
+use Zipkin\Instrumentation\Http\Client\HttpClientTracing;
+use TypeError;
+use Throwable;
+use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Component\HttpClient\Response\ResponseStream;
-use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Component\HttpClient\Response\ResponseStream;
 
 final class HttpClient implements HttpClientInterface
 {
@@ -35,19 +36,18 @@ final class HttpClient implements HttpClientInterface
     private $injector;
 
     /**
-     * @var HttpClientParser
+     * @var Parser
      */
     private $httpParser;
 
     public function __construct(
         HttpClientInterface $client,
-        Tracing $tracing,
-        HttpClientParser $httpParser = null
+        HttpClientTracing $httpTracing
     ) {
         $this->delegate = $client;
-        $this->tracer = $tracing->getTracer();
-        $this->injector = $tracing->getPropagation()->getInjector(new Map());
-        $this->httpParser = $httpParser ?? new DefaultHttpClientParser();
+        $this->tracer = $httpTracing->getTracing()->getTracer();
+        $this->injector = $httpTracing->getTracing()->getPropagation()->getInjector(new Map());
+        $this->httpParser = $httpTracing->getParser();
     }
 
     /**
@@ -73,19 +73,21 @@ final class HttpClient implements HttpClientInterface
 
         $span->start();
         $spanCustomizer = new SpanCustomizerShield($span);
-        $this->httpParser->request(strtolower($method), $url, $options, $spanCustomizer);
+        $parseRequest = new Request([$method, $url, $options]);
+        $this->httpParser->request($parseRequest, $span->getContext(), $spanCustomizer);
 
         try {
             $options['on_progress'] = self::buildOnProgress(
                 $options['on_progress'] ?? null,
+                $parseRequest,
                 [$this->httpParser, 'response'],
-                $spanCustomizer,
-                [$span, 'finish']
+                $span,
+                $spanCustomizer
             );
 
             // Since the cancel event is not being catched by the on_progress
             // callback we need to manually track it by wrapping it.
-            return new Response(
+            return new HttpClientResponse(
                 $this->delegate->request($method, $url, $options),
                 $spanCustomizer,
                 [$span, 'finish']
@@ -94,7 +96,7 @@ final class HttpClient implements HttpClientInterface
             // Since response is an asynchronus operation, according to
             // HttpClientInterface::request, this exception can only happen
             // if an unsopported option is passed.
-            $span->tag(ERROR, $e->getMessage());
+            $span->setError($e);
             $span->finish();
             throw $e;
         }
@@ -105,12 +107,19 @@ final class HttpClient implements HttpClientInterface
      * completion. on_progress callback will be called on DNS resolution, on
      * arrival of headers and on completion; it will also be called on upload/download
      * of data and at least 1/s
+     *
+     * @var (callable(int,int,array):void)|null $delegateOnProgress
+     * @var Request $parseRequest
+     * @var callable(Response,TraceContext,SpanCustomizer):void $httpParserResponse
+     * @var Span $span
+     * @var SpanCustomizer $spanCustomizer
      */
     private static function buildOnProgress(
         ?callable $delegateOnProgress,
+        Request $parseRequest,
         callable $httpParserResponse,
-        SpanCustomizer $spanCustomizer,
-        callable $spanCloser
+        Span $span,
+        SpanCustomizer $spanCustomizer
     ): callable {
         return static function (
             int $dlNow,
@@ -118,9 +127,10 @@ final class HttpClient implements HttpClientInterface
             array $info
         ) use (
             $delegateOnProgress,
+            $parseRequest,
             $httpParserResponse,
-            $spanCustomizer,
-            $spanCloser
+            $span,
+            $spanCustomizer
         ): void {
             if ($delegateOnProgress !== null) {
                 try {
@@ -128,16 +138,20 @@ final class HttpClient implements HttpClientInterface
                 } catch (Throwable $e) {
                     // According to HttpClientInterface, throwing any exceptions
                     // MUST abort the request, hence we finish the span in here.
-                    $spanCustomizer->tag(ERROR, $e->getMessage());
-                    ($spanCloser)();
+                    $span->setError($e);
+                    $span->finish();
                     throw $e;
                 }
             }
 
             if ($info['error'] !== null || $info['http_code'] > 199) {
                 // any of these three conditions represent the finalization of the request
-                ($httpParserResponse)($dlSize, $info, $spanCustomizer);
-                ($spanCloser)();
+                ($httpParserResponse)(
+                    new Response([$dlSize, $info], $parseRequest),
+                    $span->getContext(),
+                    $spanCustomizer
+                );
+                $span->finish();
             }
         };
     }
@@ -147,7 +161,7 @@ final class HttpClient implements HttpClientInterface
      */
     public function stream($responses, float $timeout = null): ResponseStreamInterface
     {
-        if ($responses instanceof Response) {
+        if ($responses instanceof HttpClientResponse) {
             $responses = [$responses];
         } elseif (!is_iterable($responses)) {
             throw new TypeError(sprintf(
@@ -158,6 +172,6 @@ final class HttpClient implements HttpClientInterface
             ));
         }
 
-        return new ResponseStream(Response::stream($this->delegate, $responses, $timeout));
+        return new ResponseStream(HttpClientResponse::stream($this->delegate, $responses, $timeout));
     }
 }
