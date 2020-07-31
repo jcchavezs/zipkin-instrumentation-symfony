@@ -43,10 +43,7 @@ final class Request extends ServerRequest
         return $this->delegate->headers->get($name);
     }
 
-    /**
-     * @return HttpFoundationRequest
-     */
-    public function unwrap()
+    public function unwrap(): HttpFoundationRequest
     {
         return $this->delegate;
     }

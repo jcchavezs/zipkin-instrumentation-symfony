@@ -62,10 +62,8 @@ final class Response extends ClientResponse
 
     /**
      * {@inhertidoc}
-     *
-     * @return array
      */
-    public function unwrap()
+    public function unwrap(): array
     {
         return [$this->dlSize, $this->info];
     }

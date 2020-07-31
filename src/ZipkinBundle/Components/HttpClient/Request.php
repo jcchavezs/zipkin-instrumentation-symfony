@@ -70,10 +70,7 @@ final class Request extends ClientRequest
         return null;
     }
 
-    /**
-     * @return array
-     */
-    public function unwrap()
+    public function unwrap(): array
     {
         return [$this->method, $this->url, $this->options];
     }

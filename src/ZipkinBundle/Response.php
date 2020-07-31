@@ -5,7 +5,6 @@ namespace ZipkinBundle;
 use Zipkin\Instrumentation\Http\Server\Response as ServerResponse;
 use Zipkin\Instrumentation\Http\Server\Request as ServerRequest;
 use Symfony\Component\HttpFoundation\Response as HttpFoundationResponse;
-use Symfony\Component\HttpFoundation\Request as HttpFoundationRequest;
 
 final class Response extends ServerResponse
 {
@@ -37,10 +36,7 @@ final class Response extends ServerResponse
         return $this->delegate->getStatusCode();
     }
 
-    /**
-     * @return HttpFoundationRequest
-     */
-    public function unwrap()
+    public function unwrap(): HttpFoundationResponse
     {
         return $this->delegate;
     }
