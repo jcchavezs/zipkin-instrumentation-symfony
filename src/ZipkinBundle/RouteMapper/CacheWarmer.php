@@ -1,16 +1,13 @@
 <?php
 
-namespace ZipkinBundle\SpanCustomizers\ByPathNamer;
+namespace ZipkinBundle\RouteMapper;
 
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
 
-/**
- * @deprecated use ZipkinBundle\RouteMapper\CacheWarmer instead
- */
 final class CacheWarmer implements CacheWarmerInterface
 {
-    const TARGET_FILENAME = 'zipkin_bundle_routing_span_namer.php';
+    private const TARGET_FILENAME = 'zipkin_bundle_route_mapper.php';
 
     /**
      * @var RouterInterface
@@ -34,7 +31,6 @@ final class CacheWarmer implements CacheWarmerInterface
         foreach ($this->router->getRouteCollection()->all() as $key => $route) {
             $routes .= sprintf('"%s" => "%s", ', $key, $route->getPath());
         }
-
         $routes .= "];";
 
         file_put_contents(

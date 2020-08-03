@@ -4,7 +4,11 @@ namespace ZipkinBundle\Tests\Unit;
 
 use Zipkin\TracingBuilder;
 use Zipkin\Samplers\BinarySampler;
+use Zipkin\Reporters\InMemory;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
+use Zipkin\Reporter;
+use Zipkin\Instrumentation\Http\Server\HttpServerTracing;
+use ZipkinBundle\Routing\RouteMapper;
 use ZipkinBundle\KernelListener;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -27,31 +31,53 @@ final class KernelListenerTest extends TestCase
     const TAG_VALUE = 'value';
     const EXCEPTION_MESSAGE = 'message';
 
-    public function testSpanIsNotCreatedOnNonMasterRequest()
-    {
-        $tracing = TracingBuilder::create()->build();
-        $logger = new NullLogger();
-
-        $kernelListener = new KernelListener($tracing, $logger);
-
-        $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(false);
-
-        $kernelListener->onKernelRequest($event->reveal());
-
-        $this->assertNull($tracing->getTracer()->getCurrentSpan());
-    }
-
-    public function testSpanIsCreatedOnKernelRequest()
+    public static function createHttpServerTracing(): array
     {
         $reporter = new InMemoryReporter();
         $tracing = TracingBuilder::create()
             ->havingSampler(BinarySampler::createAsAlwaysSample())
             ->havingReporter($reporter)
             ->build();
+
+        return [
+            new HttpServerTracing($tracing),
+            static function () use ($reporter, $tracing): array {
+                $tracing->getTracer()->flush();
+                return $reporter->flush();
+            },
+            $reporter
+        ];
+    }
+
+    public function testSpanIsNotCreatedOnNonMasterRequest()
+    {
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         */
+        list($httpServerTracing) = self::createHttpServerTracing();
+
+        $kernelListener = new KernelListener($httpServerTracing, new RouteMapper);
+
+        $event = $this->prophesize(KernelEvent::class);
+        $event->isMasterRequest()->willReturn(false);
+
+        $kernelListener->onKernelRequest($event->reveal());
+
+        $this->assertNull(
+            $httpServerTracing->getTracing()->getTracer()->getCurrentSpan()
+        );
+    }
+
+    public function testSpanIsCreatedOnKernelRequest()
+    {
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         */
+        list($httpServerTracing, $flusher) = self::createHttpServerTracing();
+
         $logger = new NullLogger();
 
-        $kernelListener = new KernelListener($tracing, $logger, [self::TAG_KEY => self::TAG_VALUE]);
+        $kernelListener = new KernelListener($httpServerTracing, new RouteMapper, $logger, [self::TAG_KEY => self::TAG_VALUE]);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -65,17 +91,13 @@ final class KernelListenerTest extends TestCase
 
         $kernelListener->onKernelRequest($event->reveal());
 
-        $tracing->getTracer()->flush();
-        $spans = $reporter->flush();
+        $spans = $flusher();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset([
-            'tags' => [
-                'http.host' => self::HTTP_HOST,
-                'http.method' => self::HTTP_METHOD,
-                'http.path' => self::HTTP_PATH,
-                self::TAG_KEY => self::TAG_VALUE,
-            ]
-        ], $spans[0]->toArray());
+        $this->assertEquals([
+            'http.method' => self::HTTP_METHOD,
+            'http.path' => self::HTTP_PATH,
+            self::TAG_KEY => self::TAG_VALUE,
+        ], $spans[0]->getTags());
     }
 
     private function mockKernel()
@@ -85,14 +107,13 @@ final class KernelListenerTest extends TestCase
 
     public function testNoSpanIsTaggedOnKernelExceptionIfItIsNotStarted()
     {
-        $reporter = new InMemoryReporter();
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($reporter)
-            ->build();
-        $logger = new NullLogger();
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         * @var callable $flusher
+         */
+        list($httpServerTracing, $flusher) = self::createHttpServerTracing();
 
-        $kernelListener = new KernelListener($tracing, $logger);
+        $kernelListener = new KernelListener($httpServerTracing);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
@@ -109,56 +130,53 @@ final class KernelListenerTest extends TestCase
 
         $kernelListener->onKernelException($exceptionEvent);
 
-        $tracing->getTracer()->flush();
-        $spans = $reporter->flush();
+        $spans = $flusher();
         $this->assertCount(0, $spans);
     }
 
     public function testSpanIsTaggedOnKernelException()
     {
-        $reporter = new InMemoryReporter();
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($reporter)
-            ->build();
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         * @var callable $flusher
+         */
+        list($httpServerTracing, $flusher) = self::createHttpServerTracing();
         $logger = new NullLogger();
-        $kernelListener = new KernelListener($tracing, $logger);
+        $kernelListener = new KernelListener($httpServerTracing, new RouteMapper, $logger);
 
+        $eventRequest = new Request();
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(true);
-        $event->getRequest()->willReturn(new Request());
+        $event->getRequest()->willReturn($eventRequest);
 
         $kernelListener->onKernelRequest($event->reveal());
 
         $exceptionEvent = new ExceptionEvent(
             $this->mockKernel(),
-            new Request(),
+            $eventRequest,
             HttpKernelInterface::MASTER_REQUEST, // isMasterRequest will be true
             new Exception(self::EXCEPTION_MESSAGE)
         );
 
         $kernelListener->onKernelException($exceptionEvent);
 
-        $tracing->getTracer()->flush();
-        $spans = $reporter->flush();
+        $spans = $flusher();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset([
-            'tags' => [
-                'error' => self::EXCEPTION_MESSAGE,
-            ]
-        ], $spans[0]->toArray());
+
+        $this->assertEquals($exceptionEvent->getThrowable(), $spans[0]->getError());
     }
 
     public function testNoSpanIsTaggedOnKernelTerminateIfItIsNotStarted()
     {
-        $reporter = new InMemoryReporter();
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($reporter)
-            ->build();
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         * @var callable $flusher
+         * @var InMemory $reporter
+         */
+        list($httpServerTracing, $flusher, $reporter) = self::createHttpServerTracing();
         $logger = new NullLogger();
 
-        $kernelListener = new KernelListener($tracing, $logger);
+        $kernelListener = new KernelListener($httpServerTracing, new RouteMapper, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
         $event->isMasterRequest()->willReturn(false);
@@ -192,14 +210,13 @@ final class KernelListenerTest extends TestCase
      */
     public function testSpanIsTaggedOnKernelResponse($responseStatusCode)
     {
-        $reporter = new InMemoryReporter();
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($reporter)
-            ->build();
-        $logger = new NullLogger();
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         * @var callable $flusher
+         */
+        list($httpServerTracing, $flusher) = self::createHttpServerTracing();
 
-        $kernelListener = new KernelListener($tracing, $logger);
+        $kernelListener = new KernelListener($httpServerTracing);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -223,30 +240,33 @@ final class KernelListenerTest extends TestCase
         $kernelListener->onKernelResponse($responseEvent);
 
         $assertTags = [
-            'http.host' => self::HTTP_HOST,
             'http.method' => self::HTTP_METHOD,
             'http.path' => self::HTTP_PATH,
-            'http.status_code' => (string) $responseStatusCode,
         ];
+
+        if ($responseStatusCode < 100 || $responseStatusCode > 299) {
+            $assertTags['http.status_code'] = (string) $responseStatusCode;
+        }
 
         if ($responseStatusCode > 399) {
             $assertTags['error'] = (string) $responseStatusCode;
         }
 
-        $tracing->getTracer()->flush();
-        $spans = $reporter->flush();
+        $spans = $flusher();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
+        $this->assertEquals($assertTags, $spans[0]->getTags());
     }
 
     public function testSpanScopeIsClosedOnResponse()
     {
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->build();
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         * @var callable $flusher
+         */
+        list($httpServerTracing) = self::createHttpServerTracing();
         $logger = new NullLogger();
 
-        $kernelListener = new KernelListener($tracing, $logger);
+        $kernelListener = new KernelListener($httpServerTracing, new RouteMapper, $logger);
 
         $request = new Request();
 
@@ -263,11 +283,11 @@ final class KernelListenerTest extends TestCase
             new Response()
         );
 
-        $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
+        $this->assertNotNull($httpServerTracing->getTracing()->getTracer()->getCurrentSpan());
 
         $kernelListener->onKernelResponse($responseEvent);
 
-        $this->assertNull($tracing->getTracer()->getCurrentSpan());
+        $this->assertNull($httpServerTracing->getTracing()->getTracer()->getCurrentSpan());
     }
 
     /**
@@ -275,14 +295,15 @@ final class KernelListenerTest extends TestCase
      */
     public function testSpanIsTaggedOnKernelTerminate($responseStatusCode)
     {
-        $reporter = new InMemoryReporter();
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->havingReporter($reporter)
-            ->build();
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         * @var callable $flusher
+         * @var InMemory $reporter
+         */
+        list($httpServerTracing, $flusher, $reporter) = self::createHttpServerTracing();
         $logger = new NullLogger();
 
-        $kernelListener = new KernelListener($tracing, $logger);
+        $kernelListener = new KernelListener($httpServerTracing, new RouteMapper, $logger);
 
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
@@ -305,31 +326,34 @@ final class KernelListenerTest extends TestCase
         $kernelListener->onKernelTerminate($responseEvent);
 
         $assertTags = [
-            'http.host' => self::HTTP_HOST,
             'http.method' => self::HTTP_METHOD,
             'http.path' => self::HTTP_PATH,
-            'http.status_code' => (string) $responseStatusCode,
         ];
+
+        if ($responseStatusCode < 100 || $responseStatusCode > 299) {
+            $assertTags['http.status_code'] = (string) $responseStatusCode;
+        }
 
         if ($responseStatusCode > 399) {
             $assertTags['error'] = (string) $responseStatusCode;
         }
 
-        // There is no need to to `Tracer::flush` here as `onKernelTerminate` does
+        // There is no need to call `Tracer::flush` here as `onKernelTerminate` does
         // it already.
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
+        $this->assertEquals($assertTags, $spans[0]->getTags());
     }
 
     public function testSpanScopeIsClosedOnTerminate()
     {
-        $tracing = TracingBuilder::create()
-            ->havingSampler(BinarySampler::createAsAlwaysSample())
-            ->build();
+        /**
+         * @var HttpServerTracing $httpServerTracing
+         */
+        list($httpServerTracing) = self::createHttpServerTracing();
         $logger = new NullLogger();
 
-        $kernelListener = new KernelListener($tracing, $logger);
+        $kernelListener = new KernelListener($httpServerTracing, new RouteMapper, $logger);
 
         $request = new Request();
 
@@ -345,10 +369,10 @@ final class KernelListenerTest extends TestCase
             new Response()
         );
 
-        $this->assertNotNull($tracing->getTracer()->getCurrentSpan());
+        $this->assertNotNull($httpServerTracing->getTracing()->getTracer()->getCurrentSpan());
 
         $kernelListener->onKernelTerminate($responseEvent);
 
-        $this->assertNull($tracing->getTracer()->getCurrentSpan());
+        $this->assertNull($httpServerTracing->getTracing()->getTracer()->getCurrentSpan());
     }
 }

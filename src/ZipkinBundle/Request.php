@@ -17,7 +17,7 @@ final class Request extends ServerRequest
      */
     private $route;
 
-    public function __construct(HttpFoundationRequest $delegate, ?string $route = null)
+    public function __construct(HttpFoundationRequest $delegate, string $route = null)
     {
         $this->delegate = $delegate;
         $this->route = $route;
