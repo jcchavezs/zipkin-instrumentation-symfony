@@ -20,6 +20,7 @@ use Symfony\Component\HttpKernel\Event\KernelEvent;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpFoundation\Response as HttpFoundationResponse;
 use Symfony\Component\HttpFoundation\Request as HttpFoundationRequest;
+use Psr\Log\NullLogger;
 use Psr\Log\LoggerInterface;
 use Exception;
 
@@ -66,16 +67,16 @@ final class KernelListener
 
     public function __construct(
         HttpServerTracing $tracing,
-        RouteMapper $routeMapper,
-        LoggerInterface $logger,
+        RouteMapper $routeMapper = null,
+        LoggerInterface $logger = null,
         array $serverTags = []
     ) {
         $this->tracer = $tracing->getTracing()->getTracer();
         $this->extractor = $tracing->getTracing()->getPropagation()->getExtractor(new RequestHeaders());
         $this->parser = $tracing->getParser();
         $this->requestSampler = $tracing->getRequestSampler();
-        $this->routeMapper = $routeMapper;
-        $this->logger = $logger;
+        $this->routeMapper = $routeMapper ?? RouteMapper::createAsNoop();
+        $this->logger = $logger ?? new NullLogger;
         $this->serverTags = $serverTags;
     }
 
