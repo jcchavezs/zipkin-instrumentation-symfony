@@ -17,6 +17,7 @@ jobs:
 
 install:
   - composer require symfony/config:"^$SYMFONY_VERSION" symfony/http-kernel:"^$SYMFONY_VERSION" symfony/routing:"^$SYMFONY_VERSION" symfony/dependency-injection:"^$SYMFONY_VERSION"
+  - composer require --dev symfony/http-client:"^$SYMFONY_VERSION"
   - composer install
 
 script:

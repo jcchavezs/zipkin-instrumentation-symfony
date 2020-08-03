@@ -30,7 +30,7 @@ final class Request extends ServerRequest
 
     public function getPath(): ?string
     {
-        return $this->delegate->getPathInfo() ?: '/';
+        return $this->delegate->getPathInfo();
     }
 
     public function getUrl(): string

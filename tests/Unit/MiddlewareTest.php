@@ -20,7 +20,6 @@ use Exception;
 
 final class MiddlewareTest extends TestCase
 {
-    const HTTP_HOST = 'localhost';
     const HTTP_METHOD = 'OPTIONS';
     const HTTP_PATH = '/foo';
     const TAG_KEY = 'key';
@@ -56,7 +55,6 @@ final class MiddlewareTest extends TestCase
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
             'REQUEST_URI' => self::HTTP_PATH,
-            'HTTP_HOST' => self::HTTP_HOST,
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
@@ -70,7 +68,6 @@ final class MiddlewareTest extends TestCase
         $this->assertCount(1, $spans);
         $this->assertArraySubset([
             'tags' => [
-                'http.host' => self::HTTP_HOST,
                 'http.method' => self::HTTP_METHOD,
                 'http.path' => self::HTTP_PATH,
                 self::TAG_KEY => self::TAG_VALUE,
@@ -142,11 +139,7 @@ final class MiddlewareTest extends TestCase
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset([
-            'tags' => [
-                'error' => self::EXCEPTION_MESSAGE,
-            ]
-        ], $spans[0]->toArray());
+        $this->assertEquals(self::EXCEPTION_MESSAGE, $spans[0]->getError()->getMessage());
     }
 
     public function testNoSpanIsTaggedOnKernelTerminateIfItIsNotStarted()
@@ -204,7 +197,6 @@ final class MiddlewareTest extends TestCase
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
             'REQUEST_URI' => self::HTTP_PATH,
-            'HTTP_HOST' => self::HTTP_HOST,
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
@@ -223,7 +215,6 @@ final class MiddlewareTest extends TestCase
         $middleware->onKernelResponse($responseEvent);
 
         $assertTags = [
-            'http.host' => self::HTTP_HOST,
             'http.method' => self::HTTP_METHOD,
             'http.path' => self::HTTP_PATH,
             'http.status_code' => (string) $responseStatusCode,
@@ -287,7 +278,6 @@ final class MiddlewareTest extends TestCase
         $request = new Request([], [], [], [], [], [
             'REQUEST_METHOD' => self::HTTP_METHOD,
             'REQUEST_URI' => self::HTTP_PATH,
-            'HTTP_HOST' => self::HTTP_HOST,
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
@@ -305,7 +295,6 @@ final class MiddlewareTest extends TestCase
         $middleware->onKernelTerminate($responseEvent);
 
         $assertTags = [
-            'http.host' => self::HTTP_HOST,
             'http.method' => self::HTTP_METHOD,
             'http.path' => self::HTTP_PATH,
             'http.status_code' => (string) $responseStatusCode,

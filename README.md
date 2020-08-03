@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony.svg?branch=master)](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony)
 [![CircleCI](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master.svg?style=svg)](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master)
 [![Latest Stable Version](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/v/stable)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
-[![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%205.6-8892BF.svg)](https://php.net/)
+[![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%207.1-8892BF.svg)](https://php.net/)
 [![Total Downloads](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/downloads)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 [![License](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/license)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 
@@ -72,7 +72,7 @@ zipkin:
         - "/another/path/"
 ```
 
-This sampler uses the `RequestStack` meaning that it won't work in event loop enviroments. For event loop environments, use a `requestSampler` in the HTTP Server tracing.
+This sampler uses the `Symfony\Component\HttpFoundation\RequestStack` meaning that it won't work in event loop enviroments. For event loop environments, use a `requestSampler` in the HTTP Server Tracing.
 
 ### By route
 
@@ -91,7 +91,7 @@ zipkin:
         - "another_route"
 ```
 
-This sampler uses the `RequestStack` meaning that it won't work in event loop enviroments. For event loop environments, use a `requestSampler` in the HTTP Server tracing.
+This sampler uses the `Symfony\Component\HttpFoundation\RequestStack` meaning that it won't work in event loop enviroments. For event loop environments, use a `requestSampler` in the HTTP Server Tracing.
 
 ### By percentage
 
