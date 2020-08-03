@@ -6,6 +6,24 @@ services:
     arguments:
       - "@service_container"
 
+  zipkin.default_http_server_tracing:
+    class: Zipkin\Instrumentation\Http\Server\HttpServerTracing
+    arguments:
+      - "@zipkin.default_tracing"
+
+  zipkin.route_mapper:
+    class: ZipkinBundle\RouteMapper\RouteMapper
+    factory: [ZipkinBundle\RouteMapper\RouteMapper, "createFromCache"]
+    arguments:
+      - "%kernel.cache_dir%"
+
+  zipkin.route_mapper.cache_warmer:
+    class: ZipkinBundle\RouteMapper\CacheWarmer
+    arguments:
+      - "@router"
+    tags:
+      - { name: kernel.cache_warmer, priority: -25500 }
+
   zipkin.sampler.route:
     class: ZipkinBundle\Samplers\RouteSampler
     public: true

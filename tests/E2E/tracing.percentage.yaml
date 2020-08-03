@@ -10,26 +10,13 @@ zipkin:
       endpoint_url: http://127.0.0.1:9411/api/v2/spans
 
 services:
-  zipkin.span_namer.route:
-    class: ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer
-    factory: [ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer, "create"]
-    arguments:
-      - "%kernel.cache_dir%"
-
-  zipkin.span_namer.route.cache_warmer:
-    class: ZipkinBundle\SpanCustomizers\ByPathNamer\CacheWarmer
-    arguments:
-      - "@router"
-    tags:
-      - { name: kernel.cache_warmer, priority: 0 }
-
   tracing.symfony_kernel_listener:
     class: ZipkinBundle\KernelListener
     arguments:
-      - "@zipkin.default_tracing"
+      - "@zipkin.default_http_server_tracing"
+      - "@zipkin.route_mapper"
       - "@logger"
       - { "version": "xxx" }
-      - "@zipkin.span_namer.route"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
       - { name: kernel.event_listener, event: kernel.response, priority: -2560 }

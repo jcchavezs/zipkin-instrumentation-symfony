@@ -2,11 +2,14 @@
 
 namespace ZipkinBundle\SpanCustomizers\ByPathNamer;
 
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Zipkin\Span;
 use ZipkinBundle\SpanCustomizer as SpanCustomizerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * @deprectated
+ */
 final class SpanCustomizer implements SpanCustomizerInterface
 {
     const NOT_FOUND = 'not_found';

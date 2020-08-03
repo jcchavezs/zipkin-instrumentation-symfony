@@ -33,7 +33,7 @@ Once declared the zipkin http client as a service you can inject it using the Sy
 
 ## Customizing spans
 
-Zipkin client instrumentation provides a `Zipkin\Instrumentation\Http\Client\Parser` interface which is used for customizing the tags being added to a span based on the request and the response data, the default parser `Zipkin\Instrumentation\Http\Client\DefaultParser` provides the usual tags and span name but you can use your own to get more accurate information.
+Zipkin client instrumentation provides a `Zipkin\Instrumentation\Http\Client\HttpClientParser` interface which is used for customizing the tags being added to a span based on the request and the response data, the default parser `Zipkin\Instrumentation\Http\Client\DefaultHttpClientParser` provides the usual tags and span name but you can use your own to get more accurate information.
 
 ```yaml
 services:
@@ -58,13 +58,13 @@ and the parser would look like:
 ```php
 namespace My\Search;
 
-use Zipkin\Instrumentation\Http\Client\DefaultParser;
-use Zipkin\Instrumentation\Http\Response;
-use Zipkin\Instrumentation\Http\Request;
+use Zipkin\Instrumentation\Http\Client\DefaultHttpClientParser;
+use Zipkin\Instrumentation\Http\Client\Response;
+use Zipkin\Instrumentation\Http\Client\Request;
 use Zipkin\Propagation\TraceContext;
 use Zipkin\SpanCustomizer;
 
-final class HttpClientParser extends DefaultParser {
+final class HttpClientParser extends DefaultHttpClientParser {
     public function request(Request $request, TraceContext $context, SpanCustomizer $span): void {
         parent::request($request, $context, $span);
         if (null !== ($searchKey = $request->getHeader('search_key'))) {

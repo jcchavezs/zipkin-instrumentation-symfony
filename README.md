@@ -19,7 +19,7 @@ composer require jcchavezs/zipkin-instrumentation-symfony
 
 This Symfony bundle provides a kernel listener that can be used to trace
 HTTP requests. In order to use it, it is important that you declare 
-the listener by adding this to `app/config/services.yml` or any other
+the listener by adding this to your `app/config/services.yml` or any other
 [dependency injection](https://symfony.com/doc/current/components/dependency_injection.html) declaration.
 
 ```yaml
@@ -27,7 +27,8 @@ services:
   tracing_kernel_listener:
     class: ZipkinBundle\KernelListener
     arguments:
-      - "@zipkin.default_tracing"
+      - "@zipkin.default_http_server_tracing"
+      - "@zipkin.route_mapper"
       - "@logger"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
@@ -71,6 +72,8 @@ zipkin:
         - "/another/path/"
 ```
 
+This sampler uses the `RequestStack` meaning that it won't work in event loop enviroments. For event loop environments, use a `requestSampler` in the HTTP Server tracing.
+
 ### By route
 
 This is for those cases where you want to make a sampling decision based on the
@@ -87,6 +90,8 @@ zipkin:
       excluded_routes:
         - "another_route"
 ```
+
+This sampler uses the `RequestStack` meaning that it won't work in event loop enviroments. For event loop environments, use a `requestSampler` in the HTTP Server tracing.
 
 ### By percentage
 
@@ -141,7 +146,8 @@ services:
   tracing_kernel_listener:
     class: ZipkinBundle\KernelListener
     arguments:
-      - "@zipkin.default_tracing"
+      - "@zipkin.default_http_server_tracing"
+      - "@zipkin.route_mapper"
       - "@logger"
       - { instance: %instance_name% }
     tags:
@@ -162,7 +168,8 @@ services:
   tracing_kernel_listener:
     class: ZipkinBundle\KernelListener
     arguments:
-      - "@my_own_tracing"
+      - "@my_own_http_server_tracing"
+      - "@zipkin.route_mapper"
       - "@logger"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
@@ -171,44 +178,56 @@ services:
       - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
-## Span customizers
+## Span customization
 
-Span customizers allow the user to add custom information to the span based on 
-the request. For example by default the span name is being defined by the HTTP 
-verb. This approach is a not so bad option seeking for low cardinality in span 
-naming. A more useful approach is to use the route path: `/user/{user_id}` however
-including the `@router` in the kernel listener is expensive and reduces its performance
-thus the best is to precompile (aka cache warm up) a map of `name => path` in cache
-that can be used to resolve the path in runtime.
+By default spans include usual HTTP information like method, path or status code but there are cases where user wants to add more information in the spans based on the request (e.g. `request_id` or a query parameter). In such cases one can extend the `HttpServerParser` to have access to the request and tag the span:
 
 ```yaml
 services:
-  zipkin.span_customizer.by_path_namer:
-    class: ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer
-    factory: [ZipkinBundle\SpanCustomizers\ByPathNamer\SpanCustomizer, 'create']
+  search.http_server_tracing:
+    class: Zipkin\Instrumentation\Http\Server\HttpServerTracing
     arguments:
-      - "%kernel.cache_dir%"
-
-  zipkin.span_customizer.by_path_namer.cache_warmer:
-    class: ZipkinBundle\SpanCustomizers\ByPathNamer\CacheWarmer
-    arguments:
-      - "@router"
-    tags:
-      - { name: kernel.cache_warmer, priority: 0 }
+      - "@zipkin.default_tracing"
+      - "@zipkin.route_mapper"
+      - "@search_http_parser" # my own parser
 
   tracing_kernel_listener:
     class: ZipkinBundle\KernelListener
     arguments:
-      - "@zipkin.default_tracing"
+      - "@search.http_server_tracing"
       - "@logger"
       - { instance: %instance_name% }
-      - "@zipkin.span_customizer.by_path_namer"
     tags:
       - { name: kernel.event_listener, event: kernel.request, priority: 2560 }
       - { name: kernel.event_listener, event: kernel.response, priority: -2560 }
       - { name: kernel.event_listener, event: kernel.exception }
       - { name: kernel.event_listener, event: kernel.terminate }
+
+  search_http_parser:
+    class: My\Search\HttpServerParser
 ```
+
+and the parser would look like:
+
+```php
+namespace My\Search;
+
+use Zipkin\Instrumentation\Http\Server\DefaultHttpServerParser;
+use Zipkin\Instrumentation\Http\Server\Response;
+use Zipkin\Instrumentation\Http\Server\Request;
+use Zipkin\Propagation\TraceContext;
+use Zipkin\SpanCustomizer;
+
+final class HttpServerParser extends DefaultHttpServerParser {
+    public function request(Request $request, TraceContext $context, SpanCustomizer $span): void {
+        parent::request($request, $context, $span);
+        if (null !== ($searchKey = $request->getHeader('search_key'))) {
+            $span->tag('search_key', $searchKey);
+        }
+    }
+}
+```
+
 
 ## HTTP Client
 
