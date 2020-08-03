@@ -6,10 +6,8 @@ use function Zipkin\Timestamp\now;
 use Zipkin\Tracing;
 use Zipkin\Tracer;
 use Zipkin\Tags;
-use Zipkin\Propagation\TraceContext;
-use Zipkin\Propagation\SamplingFlags;
-use Zipkin\Propagation\Map;
 use Zipkin\Kind;
+use ZipkinBundle\Propagation\RequestHeaders;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
@@ -65,7 +63,7 @@ final class Middleware
         SpanCustomizer ...$spanCustomizers
     ) {
         $this->tracer = $tracing->getTracer();
-        $this->extractor = $tracing->getPropagation()->getExtractor(new Map());
+        $this->extractor = $tracing->getPropagation()->getExtractor(new RequestHeaders());
         $this->logger = $logger;
         $this->tags = $tags;
         $this->spanCustomizers = $spanCustomizers;
@@ -81,22 +79,13 @@ final class Middleware
         }
 
         $request = $event->getRequest();
-        try {
-            $spanContext = $this->extractContextFromRequest($request);
-        } catch (Exception $e) {
-            $this->logger->error(
-                sprintf('Error when starting the span: %s', $e->getMessage())
-            );
-            return;
-        }
-
-        $span = $this->tracer->nextSpan($spanContext);
+        $extractedContext = ($this->extractor)($request);
+        $span = $this->tracer->nextSpan($extractedContext);
         $span->start();
 
         if (!$span->isNoop()) {
             $span->setName($request->getMethod());
             $span->setKind(Kind\SERVER);
-            $span->tag(Tags\HTTP_HOST, $request->getHost());
             $span->tag(Tags\HTTP_METHOD, $request->getMethod());
             $span->tag(Tags\HTTP_PATH, $request->getPathInfo());
             foreach ($this->tags as $key => $value) {
@@ -137,9 +126,7 @@ final class Middleware
             return;
         }
 
-        $errorMessage = $event->getThrowable()->getMessage();
-
-        $span->tag(Tags\ERROR, $errorMessage);
+        $span->setError($event->getThrowable());
         $this->finishSpan($event->getRequest(), null);
     }
 
@@ -205,20 +192,6 @@ final class Middleware
             // We reset the scope closer as it did its job
             $request->attributes->remove(self::SCOPE_CLOSER_KEY);
         }
-    }
-
-    /**
-     * @param Request $request
-     * @return TraceContext|SamplingFlags|null
-     */
-    private function extractContextFromRequest(Request $request)
-    {
-        return ($this->extractor)(array_map(
-            function ($values) {
-                return $values[0];
-            },
-            $request->headers->all()
-        ));
     }
 
     private function flushTracer()
