@@ -1,36 +1,23 @@
 <?php
 
-
 namespace ZipkinBundle\Components\Messenger;
 
-use Zipkin\Kind;
-use Zipkin\Propagation\Exceptions\InvalidPropagationCarrier;
-use Zipkin\Propagation\Getter;
-use Zipkin\Propagation\RemoteSetter;
+use Symfony\Component\Messenger\Stamp\StampInterface;
 
-class PropagationStamp implements RemoteSetter, Getter
+final class PropagationStamp implements StampInterface
 {
-    public function get($carrier, string $key): ?string
+    /**
+     * @var string[string]
+     */
+    private $context = [];
+
+    public function get(string $key): ?string
     {
-        $this->validateCarrier($carrier);
-        return $carrier->get($key);
+        return $this->context[$key] ?? null;
     }
 
-    public function getKind(): string
+    public function put(string $key, string $value): void
     {
-        return Kind\PRODUCER;
-    }
-
-    public function put(&$carrier, string $key, string $value): void
-    {
-        $this->validateCarrier($carrier);
-        $carrier->add($key, $value);
-    }
-
-    private function validateCarrier($carrier): void
-    {
-        if (!$carrier instanceof B3Stamp) {
-            throw InvalidPropagationCarrier::forCarrier($carrier);
-        }
+        $this->context[$key] = $value;
     }
 }
