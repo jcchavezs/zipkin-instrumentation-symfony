@@ -2,18 +2,18 @@
 
 namespace ZipkinBundle\Tests\Unit;
 
-use Exception;
-use Psr\Log\NullLogger;
 use Zipkin\TracingBuilder;
-use ZipkinBundle\Middleware;
-use PHPUnit\Framework\TestCase;
 use Zipkin\Samplers\BinarySampler;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
-use Symfony\Component\HttpKernel\Event\KernelEvent;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
+use ZipkinBundle\Middleware;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
+use Psr\Log\NullLogger;
+use PHPUnit\Framework\TestCase;
+use Exception;
 
 final class MiddlewareTest extends TestCase
 {
@@ -157,11 +157,7 @@ final class MiddlewareTest extends TestCase
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset([
-            'tags' => [
-                'error' => self::EXCEPTION_MESSAGE,
-            ]
-        ], $spans[0]->toArray());
+        $this->assertEquals(self::EXCEPTION_MESSAGE, $spans[0]->getError()->getMessage());
     }
 
     public function testNoSpanIsTaggedOnKernelTerminateIfItIsNotStarted()

@@ -2,9 +2,9 @@
 
 namespace ZipkinBundle\Samplers;
 
-use InvalidArgumentException;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Zipkin\Sampler;
+use Symfony\Component\HttpFoundation\RequestStack;
+use InvalidArgumentException;
 
 final class RouteSampler implements Sampler
 {
@@ -35,7 +35,7 @@ final class RouteSampler implements Sampler
      * @return bool
      * @throws \InvalidArgumentException
      */
-    public function isSampled($traceId)
+    public function isSampled($traceId): bool
     {
         $masterRequest = $this->requestStack->getMasterRequest();
         if ($masterRequest === null) {

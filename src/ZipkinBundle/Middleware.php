@@ -2,19 +2,17 @@
 
 namespace ZipkinBundle;
 
-use Exception;
-use Zipkin\Kind;
-use Zipkin\Tags;
-use Zipkin\Tracer;
-use Zipkin\Tracing;
-use Zipkin\Propagation\Map;
-use Psr\Log\LoggerInterface;
 use function Zipkin\Timestamp\now;
-use Zipkin\Propagation\TraceContext;
-use Zipkin\Propagation\SamplingFlags;
+use Zipkin\Tracing;
+use Zipkin\Tracer;
+use Zipkin\Tags;
+use Zipkin\Kind;
+use ZipkinBundle\Propagation\RequestHeaders;
 use Symfony\Component\HttpKernel\Kernel;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpFoundation\Request;
+use Psr\Log\LoggerInterface;
+use Exception;
 
 final class Middleware
 {
@@ -57,7 +55,7 @@ final class Middleware
         SpanCustomizer ...$spanCustomizers
     ) {
         $this->tracer = $tracing->getTracer();
-        $this->extractor = $tracing->getPropagation()->getExtractor(new Map());
+        $this->extractor = $tracing->getPropagation()->getExtractor(new RequestHeaders());
         $this->logger = $logger;
         $this->tags = $tags;
         $this->spanCustomizers = $spanCustomizers;
@@ -74,14 +72,7 @@ final class Middleware
         }
 
         $request = $event->getRequest();
-        try {
-            $spanContext = $this->extractContextFromRequest($request);
-        } catch (Exception $e) {
-            $this->logger->error(
-                sprintf('Error when starting the span: %s', $e->getMessage())
-            );
-            return;
-        }
+        $spanContext = ($this->extractor)($request);
 
         $span = $this->tracer->nextSpan($spanContext);
         $span->start();
@@ -130,15 +121,15 @@ final class Middleware
             /**
              * @var \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
              */
-            $errorMessage = $event->getException()->getMessage();
+            $e = $event->getException();
         } else {
             /**
              * @var \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
              */
-            $errorMessage = $event->getThrowable()->getMessage();
+            $e = $event->getThrowable();
         }
 
-        $span->tag(Tags\ERROR, $errorMessage);
+        $span->setError($e);
         $this->finishSpan($event->getRequest(), null);
     }
 
@@ -222,20 +213,6 @@ final class Middleware
             // We reset the scope closer as it did its job
             $request->attributes->remove(self::SCOPE_CLOSER_KEY);
         }
-    }
-
-    /**
-     * @param Request $request
-     * @return TraceContext|SamplingFlags|null
-     */
-    private function extractContextFromRequest(Request $request)
-    {
-        return ($this->extractor)(array_map(
-            function ($values) {
-                return $values[0];
-            },
-            $request->headers->all()
-        ));
     }
 
     private function flushTracer()
