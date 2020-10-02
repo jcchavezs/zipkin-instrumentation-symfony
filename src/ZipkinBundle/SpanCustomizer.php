@@ -2,9 +2,12 @@
 
 namespace ZipkinBundle;
 
-use Symfony\Component\HttpFoundation\Request;
 use Zipkin\Span;
+use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * @deprectated
+ */
 interface SpanCustomizer
 {
     /**

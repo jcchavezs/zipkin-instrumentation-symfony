@@ -7,7 +7,7 @@
         "symfony/http-kernel": "^4.4|^5.0",
         "symfony/routing": "^4.4|^5.0",
         "symfony/dependency-injection": "^4.4|^5.0",
-        "openzipkin/zipkin": "2.0.x-dev"
+        "openzipkin/zipkin": "2.0.0"
     },
     "require-dev": {
         "jcchavezs/httptest": "~0.2",
@@ -38,10 +38,5 @@
         "test": "./vendor/bin/phpunit tests/Unit",
         "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/E2E/test-app/* ./",
         "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./"
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.2.x-dev"
-        }
     }
 }
