@@ -49,12 +49,8 @@ workflows:
       - integration-test:
           matrix:
             parameters:
-              php-version: ["7.0", "7.1", "7.2", "7.3"]
+              php-version: ["7.1", "7.2", "7.3"]
               symfony-version: ["3.4", "4.4", "5.1"]
             exclude:
-              - php-version: "7.0"
-                symfony-version: "4.4"
-              - php-version: "7.0"
-                symfony-version: "5.1"
               - php-version: "7.1"
                 symfony-version: "5.1"
