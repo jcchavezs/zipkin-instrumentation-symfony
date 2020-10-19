@@ -66,15 +66,15 @@ final class KernelListener
     private $serverTags;
 
     public function __construct(
-        HttpServerTracing $tracing,
+        HttpServerTracing $httpTracing,
         RouteMapper $routeMapper = null,
         LoggerInterface $logger = null,
         array $serverTags = []
     ) {
-        $this->tracer = $tracing->getTracing()->getTracer();
-        $this->extractor = $tracing->getTracing()->getPropagation()->getExtractor(new RequestHeaders());
-        $this->parser = $tracing->getParser();
-        $this->requestSampler = $tracing->getRequestSampler();
+        $this->tracer = $httpTracing->getTracing()->getTracer();
+        $this->extractor = $httpTracing->getTracing()->getPropagation()->getExtractor(new RequestHeaders());
+        $this->parser = $httpTracing->getParser();
+        $this->requestSampler = $httpTracing->getRequestSampler();
         $this->routeMapper = $routeMapper ?? RouteMapper::createAsNoop();
         $this->logger = $logger ?? new NullLogger;
         $this->serverTags = $serverTags;
@@ -105,8 +105,7 @@ final class KernelListener
         $span->setKind(Kind\SERVER);
         $spanCustomizer = new SpanCustomizerShield($span);
 
-        $routePath = $this->routeMapper->mapToPath($request);
-        $this->parser->request(new Request($request, $routePath), $span->getContext(), $spanCustomizer);
+        $this->parser->request(new Request($request), $span->getContext(), $spanCustomizer);
         foreach ($this->serverTags as $key => $value) {
             $span->tag($key, $value);
         }
@@ -221,9 +220,10 @@ final class KernelListener
             $span->tag('symfony.route', $routeName);
         }
 
+        $routePath = $this->routeMapper->mapToPath($request);
         if ($response != null) {
             $this->parser->response(
-                new Response($response, new Request($request)),
+                new Response($response, new Request($request, $routePath)),
                 $span->getContext(),
                 $request->attributes->get(self::SPAN_CUSTOMIZER_KEY)
             );

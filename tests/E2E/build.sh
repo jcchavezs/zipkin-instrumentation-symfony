@@ -44,3 +44,5 @@ mkdir ./src/Sampler && cp ../CustomSampler.php ./src/Sampler
 mv ./config/services.yaml ./config/services.yaml.dist
 echo "imports: [{ resource: tracing.yaml }]" > ./config/services.yaml
 cat ./config/services.yaml.dist >> ./config/services.yaml
+
+./bin/console cache:warmup 
