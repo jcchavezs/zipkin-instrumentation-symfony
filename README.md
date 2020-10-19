@@ -248,11 +248,5 @@ composer test
 ### E2E testing
 
 On every build we run a end to end (E2E) test against a symfony application.
-This test run in our CI tests but it can be also reproduced in local by:
 
-1. Go to `tests/E2E`
-2. Run `SYMFONY_VERSION={{SYMFONY_VERSION}} make build` to build the test application (by default newest version)
-3. Run `make run-zipkin` to start zipkin sever
-4. Run `make run-app` to start the test application
-5. Hit the application `curl -i http://localhost:8002/_health`
-6. Check that traces are in zipkin (`http://localhost:9411/zipkin/`)
+This test run in our CI tests but it can be also [reproduced in local](./tests/E2E/README.md).
