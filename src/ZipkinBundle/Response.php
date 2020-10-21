@@ -18,12 +18,19 @@ final class Response extends ServerResponse
      */
     private $request;
 
+    /**
+     * @var string|null
+     */
+    private $route;
+
     public function __construct(
         HttpFoundationResponse $delegate,
-        ?Request $request
+        ?Request $request,
+        string $route = null
     ) {
         $this->delegate = $delegate;
         $this->request = $request;
+        $this->route = $route;
     }
 
     public function getRequest(): ?ServerRequest
@@ -34,6 +41,11 @@ final class Response extends ServerResponse
     public function getStatusCode(): int
     {
         return $this->delegate->getStatusCode();
+    }
+
+    public function getRoute(): ?string
+    {
+        return $this->route;
     }
 
     public function unwrap(): HttpFoundationResponse
