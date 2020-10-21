@@ -48,7 +48,7 @@ test $(echo "$TRACES" | jq '.[0] | length') -eq 1
 # makes sure the trace does not contain errors
 test "$(echo "$TRACES" | jq -c '.[0][0].tags.error')" = "null"
 
-# makes sure the span has the right name
+# makes sure the server span has the right name
 test "$(echo "$TRACES" | jq -cr ".[0][0].name")" = "get /_health"
 
 exit $?
