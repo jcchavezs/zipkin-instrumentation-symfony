@@ -7,7 +7,7 @@
         "symfony/http-kernel": "^4.4|^5.0",
         "symfony/routing": "^4.4|^5.0",
         "symfony/dependency-injection": "^4.4|^5.0",
-        "openzipkin/zipkin": "dev-master"
+        "openzipkin/zipkin": "^2.0.1"
     },
     "require-dev": {
         "jcchavezs/httptest": "~0.2",
