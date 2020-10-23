@@ -18,10 +18,11 @@ final class ResponseTest extends BaseResponseTest
         int $statusCode,
         $headers = [],
         $body = null,
-        ServerRequest $request = null
+        ServerRequest $request = null,
+        string $route = null
     ): array {
         $delegateResponse = new HttpFoundationResponse($body, $statusCode, $headers);
-        $response = new Response($delegateResponse, $request);
+        $response = new Response($delegateResponse, $request, $route);
         return [$response, $delegateResponse, $request];
     }
 

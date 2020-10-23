@@ -223,7 +223,7 @@ final class KernelListener
         $routePath = $this->routeMapper->mapToPath($request);
         if ($response != null) {
             $this->parser->response(
-                new Response($response, new Request($request, $routePath)),
+                new Response($response, new Request($request), $routePath),
                 $span->getContext(),
                 $request->attributes->get(self::SPAN_CUSTOMIZER_KEY)
             );

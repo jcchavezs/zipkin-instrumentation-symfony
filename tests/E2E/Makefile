@@ -13,6 +13,7 @@ run-app: ## Runs symfony app
 
 run-zipkin: ## Runs zipkin server
 	docker run -d -p 9411:9411 openzipkin/zipkin
+	@echo "\nCheck your traces at http://localhost:9411/zipkin/\n"
 
 clean: ## Cleans build
 	rm -rf test-app
