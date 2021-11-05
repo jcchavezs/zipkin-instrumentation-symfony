@@ -6,6 +6,7 @@ use Zipkin\TracingBuilder;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Sampler;
 use Zipkin\Reporters\InMemory;
+use Zipkin\Recording\ReadbackSpan;
 use Zipkin\Instrumentation\Http\Client\HttpClientTracing;
 use ZipkinBundle\Components\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\TraceableHttpClient;
@@ -91,8 +92,11 @@ final class HttpClientTest extends TestCase
         $response = $tracedClient->request('GET', 'http://test.com');
         $spans = $flusher();
         $this->assertCount(1, $spans);
-        $span = $spans[0]->toArray();
-        $this->assertEquals('GET', $span['name']);
+        /**
+         * @var ReadbackSpan $span
+         */
+        $span = $spans[0];
+        $this->assertEquals('GET', $span->GetName());
         $this->assertEquals(200, $response->getStatusCode());
     }
 
@@ -111,8 +115,12 @@ final class HttpClientTest extends TestCase
 
         $spans = $flusher();
         $this->assertCount(1, $spans);
-        $span = $spans[0]->toArray();
-        $this->assertEquals('GET', $span['name']);
-        $this->assertEquals('403', $span['tags']['error']);
+
+        /**
+         * @var ReadbackSpan $span
+         */
+        $span = $spans[0];
+        $this->assertEquals('GET', $span->getName());
+        $this->assertEquals('403', $span->getTags()['http.status_code']);
     }
 }

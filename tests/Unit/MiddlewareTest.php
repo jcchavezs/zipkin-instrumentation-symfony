@@ -5,6 +5,7 @@ namespace ZipkinBundle\Tests\Unit;
 use Zipkin\TracingBuilder;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
+use Zipkin\Recording\ReadbackSpan;
 use ZipkinBundle\Middleware;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -20,11 +21,11 @@ use Exception;
 
 final class MiddlewareTest extends TestCase
 {
-    const HTTP_METHOD = 'OPTIONS';
-    const HTTP_PATH = '/foo';
-    const TAG_KEY = 'key';
-    const TAG_VALUE = 'value';
-    const EXCEPTION_MESSAGE = 'message';
+    public const HTTP_METHOD = 'OPTIONS';
+    public const HTTP_PATH = '/foo';
+    public const TAG_KEY = 'key';
+    public const TAG_VALUE = 'value';
+    public const EXCEPTION_MESSAGE = 'message';
 
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
@@ -66,13 +67,10 @@ final class MiddlewareTest extends TestCase
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset([
-            'tags' => [
-                'http.method' => self::HTTP_METHOD,
-                'http.path' => self::HTTP_PATH,
-                self::TAG_KEY => self::TAG_VALUE,
-            ]
-        ], $spans[0]->toArray());
+        $tags = $spans[0]->getTags();
+        $this->assertEquals(self::HTTP_METHOD, $tags['http.method']);
+        $this->assertEquals(self::HTTP_PATH, $tags['http.path']);
+        $this->assertEquals(self::TAG_VALUE, $tags[self::TAG_KEY]);
     }
 
     private function mockKernel()
@@ -227,7 +225,11 @@ final class MiddlewareTest extends TestCase
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
+        /**
+         * @var ReadbackSpan $span
+         */
+        $span = $spans[0];
+        $this->assertEquals($assertTags, $span->getTags());
     }
 
     public function testSpanScopeIsClosedOnResponse()
@@ -308,7 +310,11 @@ final class MiddlewareTest extends TestCase
         // it already.
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
-        $this->assertArraySubset(['tags' => $assertTags], $spans[0]->toArray());
+        /**
+         * @var ReadbackSpan $span
+         */
+        $span = $spans[0];
+        $this->assertEquals($assertTags, $span->getTags());
     }
 
     public function testSpanScopeIsClosedOnTerminate()

@@ -23,7 +23,7 @@ final class ResponseTest extends BaseResponseTest
     ): array {
         $delegateResponse = new HttpFoundationResponse($body, $statusCode, $headers);
         $response = new Response($delegateResponse, $request, $route);
-        return [$response, $delegateResponse, $request];
+        return [$response, $delegateResponse, $request, $route];
     }
 
     /**

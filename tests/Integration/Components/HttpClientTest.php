@@ -3,16 +3,17 @@
 namespace ZipkinTests\Integration\Reporters\Http;
 
 use Zipkin\TracingBuilder;
-use HttpTest\HttpTestServer;
-use Zipkin\Reporters\InMemory;
-use PHPUnit\Framework\TestCase;
-use RingCentral\Psr7\BufferStream;
 use Zipkin\Samplers\BinarySampler;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Symfony\Component\HttpClient\CurlHttpClient;
-use Symfony\Component\HttpClient\NativeHttpClient;
+use Zipkin\Reporters\InMemory;
+use Zipkin\Recording\ReadbackSpan;
 use ZipkinBundle\Components\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\NativeHttpClient;
+use Symfony\Component\HttpClient\CurlHttpClient;
+use RingCentral\Psr7\BufferStream;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\RequestInterface;
+use PHPUnit\Framework\TestCase;
+use HttpTest\HttpTestServer;
 
 final class HttpClientTest extends TestCase
 {
@@ -56,8 +57,11 @@ final class HttpClientTest extends TestCase
             $spans = $inMemory->flush();
             $this->assertCount(1, $spans);
 
-            $span = $spans[0]->toArray();
-            $this->assertEquals('http/get', $span['name']);
+            /**
+             * @var ReadbackSpan $span
+             */
+            $span = $spans[0];
+            $this->assertEquals('http/get', $span->getName());
         } finally {
             $server->stop();
         }
@@ -86,9 +90,12 @@ final class HttpClientTest extends TestCase
             $tracing->getTracer()->flush();
             $spans = $inMemory->flush();
             $this->assertCount(1, $spans);
-            $span = $spans[0]->toArray();
-            $this->assertEquals('http/get', $span['name']);
-            $this->assertEquals('Response has been canceled.', $span['tags']['error']);
+            /**
+             * @var ReadbackSpan $span
+             */
+            $span = $spans[0];
+            $this->assertEquals('http/get', $span->getName());
+            $this->assertEquals('Response has been canceled.', $span->getTags()['error']);
         } finally {
             $server->stop();
         }
@@ -127,8 +134,11 @@ final class HttpClientTest extends TestCase
             $tracing->getTracer()->flush();
             $spans = $inMemory->flush();
             $this->assertCount(1, $spans);
+            /**
+             * @var ReadbackSpan $span
+             */
             $span = $spans[0]->toArray();
-            $this->assertEquals('http/get', $span['name']);
+            $this->assertEquals('http/get', $span->getName());
         } finally {
             $server->stop();
         }
