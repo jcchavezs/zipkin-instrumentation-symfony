@@ -1,6 +1,6 @@
 <?php
 
-namespace ZipkinTests\Integration\Reporters\Http;
+namespace ZipkinBundle\Integration\Reporters\Http;
 
 use Zipkin\TracingBuilder;
 use Zipkin\Samplers\BinarySampler;

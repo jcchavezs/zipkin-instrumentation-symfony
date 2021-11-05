@@ -6,7 +6,6 @@ use Zipkin\Instrumentation\Http\Client\Request as ClientRequest;
 use ZipkinTests\Unit\Instrumentation\Http\Client\BaseResponseTest;
 use ZipkinBundle\Components\HttpClient\Response;
 use ZipkinBundle\Components\HttpClient\Request;
-use Symfony\Component\HttpFoundation\Request as HttpFoundationRequest;
 
 final class ResponseTest extends BaseResponseTest
 {

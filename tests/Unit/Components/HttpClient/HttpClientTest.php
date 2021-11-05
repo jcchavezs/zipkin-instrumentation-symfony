@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
 
 final class HttpClientTest extends TestCase
 {
-    public static function createTracing(Sampler $sampler = null): array
+    private static function createTracing(Sampler $sampler = null): array
     {
         $inMemory = new InMemory();
         $tracing = TracingBuilder::create()
@@ -96,7 +96,7 @@ final class HttpClientTest extends TestCase
          * @var ReadbackSpan $span
          */
         $span = $spans[0];
-        $this->assertEquals('GET', $span->GetName());
+        $this->assertEquals('GET', $span->getName());
         $this->assertEquals(200, $response->getStatusCode());
     }
 
