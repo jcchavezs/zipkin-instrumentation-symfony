@@ -18,18 +18,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - php-version: "7.1"
-            symfony-version: 4.4
-          - php-version: "7.2"
-            symfony-version: 4.4
-          - php-version: "7.3"
-            symfony-version: 4.4
-          - php-version: "7.2"
-            symfony-version: 5.0
-          - php-version: "7.3"
-            symfony-version: 5.0
-          - php-version: "7.4"
-            symfony-version: 5.0
+          #          - php-version: "7.1"
+          #            symfony-version: 4.4
+          #          - php-version: "7.2"
+          #            symfony-version: 4.4
+          #          - php-version: "7.3"
+          #            symfony-version: 4.4
+          #          - php-version: "7.2"
+          #            symfony-version: 5.0
+          #          - php-version: "7.3"
+          #            symfony-version: 5.0
           - php-version: "7.4"
             symfony-version: 5.0
           - php-version: "8.0"
