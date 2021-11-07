@@ -19,13 +19,16 @@ use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
 use Exception;
 
+/**
+ * @deprecated
+ */
 final class MiddlewareTest extends TestCase
 {
-    public const HTTP_METHOD = 'OPTIONS';
-    public const HTTP_PATH = '/foo';
-    public const TAG_KEY = 'key';
-    public const TAG_VALUE = 'value';
-    public const EXCEPTION_MESSAGE = 'message';
+    private const HTTP_METHOD = 'OPTIONS';
+    private const HTTP_PATH = '/foo';
+    private const TAG_KEY = 'key';
+    private const TAG_VALUE = 'value';
+    private const EXCEPTION_MESSAGE = 'message';
 
     public function testSpanIsNotCreatedOnNonMasterRequest()
     {
@@ -225,6 +228,7 @@ final class MiddlewareTest extends TestCase
         $tracing->getTracer()->flush();
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
+
         /**
          * @var ReadbackSpan $span
          */
@@ -310,6 +314,7 @@ final class MiddlewareTest extends TestCase
         // it already.
         $spans = $reporter->flush();
         $this->assertCount(1, $spans);
+
         /**
          * @var ReadbackSpan $span
          */
