@@ -45,6 +45,8 @@ workflows:
   all-tests:
     jobs:
       - e2e:
+          context:
+            - composer-auth # check https://app.circleci.com/settings/organization/github/jcchavezs/contexts
           matrix:
             parameters:
               php-version: ["7.1", "7.2", "7.3", "7.4"]

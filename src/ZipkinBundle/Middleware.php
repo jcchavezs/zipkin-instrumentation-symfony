@@ -2,7 +2,6 @@
 
 namespace ZipkinBundle;
 
-use function Zipkin\Timestamp\now;
 use Zipkin\Tracing;
 use Zipkin\Tracer;
 use Zipkin\Tags;
@@ -16,14 +15,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Psr\Log\LoggerInterface;
 use Exception;
+use function Zipkin\Timestamp\now;
 
 /**
  * @deprecated use KernelListener instead.
  */
-
 final class Middleware
 {
-    const SCOPE_CLOSER_KEY = 'zipkin_bundle_scope_closer';
+    public const SCOPE_CLOSER_KEY = 'zipkin_bundle_scope_closer';
 
     /**
      * @var Tracer

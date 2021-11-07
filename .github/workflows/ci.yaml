@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - php-version: "7.1"
+            symfony-version: "4.4"
+          - php-version: "7.2"
+            symfony-version: "4.4"
+          - php-version: "7.3"
+            symfony-version: "4.4"
+          - php-version: "7.2"
+            symfony-version: "5.0"
+          - php-version: "7.3"
+            symfony-version: "5.0"
+          - php-version: "7.4"
+            symfony-version: "5.0"
+          - php-version: "8.0"
+            symfony-version: "5.0"
+          - php-version: "8.1"
+            symfony-version: "5.0"
+    name: PHP ${{ matrix.php-version }} Test on Symfony ${{ matrix.symfony-version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      - name: Install dependencies
+        run: |
+          composer require symfony/config:"^${{ matrix.symfony-version }}" symfony/http-kernel:"^${{ matrix.symfony-version }}" symfony/routing:"^${{ matrix.symfony-version }}" symfony/dependency-injection:"^${{ matrix.symfony-version }}"
+          composer require --dev symfony/http-client:"^${{ matrix.symfony-version }}"
+          composer install
+
+      - name: Run coding style checking
+        run: composer lint
+
+      - name: Run tests
+        run: composer test
