@@ -10,7 +10,7 @@ COMPOSER_RUNNER=${COMPOSER_RUNNER:-${DEFAULT_COMPOSER_RUNNER}}
 # Deletes old executions of the build
 rm -rf ${APP_FOLDER}
 
-${COMPOSER_RUNNER} create-project symfony/website-skeleton:^${SYMFONY_VERSION} ${APP_FOLDER} || exit 1
+${COMPOSER_RUNNER} create-project --prefer-dist --no-interaction symfony/website-skeleton:^${SYMFONY_VERSION} ${APP_FOLDER} || exit 1
 cd ${APP_FOLDER}
 
 # Includes zipkin-instrumentation-symfony to the composer.json of the app
