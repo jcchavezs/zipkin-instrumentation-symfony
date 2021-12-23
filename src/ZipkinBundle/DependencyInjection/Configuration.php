@@ -3,8 +3,8 @@
 namespace ZipkinBundle\DependencyInjection;
 
 use Symfony\Component\HttpKernel\Kernel;
-use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 
 final class Configuration implements ConfigurationInterface
 {
@@ -51,6 +51,7 @@ final class Configuration implements ConfigurationInterface
             ->arrayNode('reporter')->addDefaultsIfNotSet()
             ->children()
             ->scalarNode('type')->defaultValue('log')->end()
+            // deprecated
             ->scalarNode('metrics')->defaultValue(null)->end()
             ->arrayNode('http')->addDefaultsIfNotSet()
             ->children()

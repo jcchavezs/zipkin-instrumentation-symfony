@@ -2,8 +2,8 @@
 
 namespace ZipkinBundle\DependencyInjection;
 
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
 
@@ -65,11 +65,6 @@ final class ZipkinExtension extends Extension
         $container->setParameter(
             'zipkin.reporter.type',
             $config['reporter']['type']
-        );
-
-        $container->setParameter(
-            'zipkin.reporter.metrics',
-            $config['reporter']['metrics']
         );
 
         $container->setParameter(

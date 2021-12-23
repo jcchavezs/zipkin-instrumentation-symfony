@@ -2,9 +2,9 @@
 
 namespace ZipkinBundle\Samplers;
 
-use InvalidArgumentException;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Zipkin\Sampler;
+use Symfony\Component\HttpFoundation\RequestStack;
+use InvalidArgumentException;
 
 final class PathSampler implements Sampler
 {

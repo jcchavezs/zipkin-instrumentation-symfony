@@ -4,22 +4,21 @@ namespace ZipkinBundle\Tests\Unit;
 
 use stdClass;
 use Zipkin\Tracing;
+use Zipkin\Samplers\BinarySampler;
+use ZipkinBundle\TracingFactory;
+use ZipkinBundle\Exceptions\InvalidSampler;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
+use Symfony\Component\DependencyInjection\Container;
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
-use ZipkinBundle\TracingFactory;
-use Zipkin\Samplers\BinarySampler;
-use ZipkinBundle\Exceptions\InvalidSampler;
-use Symfony\Component\DependencyInjection\Container;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 
 final class TracingFactoryTest extends TestCase
 {
-    const DEFAULT_PARAMETER_BAG = [
+    private const DEFAULT_PARAMETER_BAG = [
         'zipkin.noop' => false,
         'zipkin.service_name' => 'symfony',
         'zipkin.sampler.type' => 'always',
         'zipkin.reporter.type' => 'log',
-        'zipkin.reporter.metrics' => null
     ];
 
     /**
@@ -50,7 +49,7 @@ final class TracingFactoryTest extends TestCase
     {
         $parameterBag = new ParameterBag(array_merge(self::DEFAULT_PARAMETER_BAG, [
             'zipkin.sampler.type' => 'custom',
-            'zipkin.sampler.custom' => 'my_service'
+            'zipkin.sampler.custom' => 'my_service',
         ]));
 
         $container = new Container($parameterBag);

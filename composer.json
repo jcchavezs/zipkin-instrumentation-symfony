@@ -5,9 +5,10 @@
     "require": {
         "symfony/config": "^4.4||^5.0",
         "symfony/http-kernel": "^4.4||^5.0",
+        "symfony/http-foundation": "<6.0",
         "symfony/routing": "^4.4||^5.0",
         "symfony/dependency-injection": "^4.4||^5.0",
-        "openzipkin/zipkin": "^2.0.2 || 3.0.0-rc.2"
+        "openzipkin/zipkin": "^2.0.2 || ^3.0"
     },
     "require-dev": {
         "jcchavezs/httptest": "~0.2",
@@ -36,7 +37,7 @@
     },
     "scripts": {
         "test": "./vendor/bin/phpunit tests/Unit",
-        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/E2E/test-app/* ./",
-        "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=*/tests/Integration/test-app/* ./"
+        "lint": "./vendor/bin/phpcs --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=./tests/E2E/test-app/* ./",
+        "fix-lint": "./vendor/bin/phpcbf --standard=ZEND --standard=PSR2 --ignore=*/vendor/* --ignore=./tests/Integration/test-app/* ./"
     }
 }
