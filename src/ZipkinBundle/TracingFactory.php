@@ -2,17 +2,17 @@
 
 namespace ZipkinBundle;
 
-use Zipkin\Sampler;
+use Zipkin\TracingBuilder;
 use Zipkin\Tracing;
-use Zipkin\Endpoint;
-use Zipkin\Reporter;
+use Zipkin\Samplers\PercentageSampler;
+use Zipkin\Samplers\BinarySampler;
+use Zipkin\Sampler;
+use Zipkin\Reporters\Noop;
 use Zipkin\Reporters\Log;
 use Zipkin\Reporters\Http;
-use Zipkin\Reporters\Noop;
-use Zipkin\TracingBuilder;
+use Zipkin\Reporter;
+use Zipkin\Endpoint;
 use ZipkinBundle\Exceptions\InvalidSampler;
-use Zipkin\Samplers\BinarySampler;
-use Zipkin\Samplers\PercentageSampler;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 final class TracingFactory
@@ -50,7 +50,6 @@ final class TracingFactory
     private static function buildReporter(ContainerInterface $container)
     {
         $reporterName = $container->getParameter('zipkin.reporter.type');
-        $metricsName = $container->getParameter('zipkin.reporter.metrics');
 
         switch ($reporterName) {
             default:
@@ -62,9 +61,7 @@ final class TracingFactory
                 break;
             case 'http':
                 return new Http(
-                    null,
-                    $container->getParameter('zipkin.reporter.http'),
-                    $metricsName === null ? null : $container->get($metricsName)
+                    $container->getParameter('zipkin.reporter.http') ?: [],
                 );
         }
     }
