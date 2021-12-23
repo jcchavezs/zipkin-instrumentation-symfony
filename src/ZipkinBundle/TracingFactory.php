@@ -60,9 +60,7 @@ final class TracingFactory
                 return new Noop();
                 break;
             case 'http':
-                return new Http(
-                    $container->getParameter('zipkin.reporter.http') ?: [],
-                );
+                return new Http($container->getParameter('zipkin.reporter.http') ?: []);
         }
     }
 

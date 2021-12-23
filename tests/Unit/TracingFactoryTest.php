@@ -49,7 +49,7 @@ final class TracingFactoryTest extends TestCase
     {
         $parameterBag = new ParameterBag(array_merge(self::DEFAULT_PARAMETER_BAG, [
             'zipkin.sampler.type' => 'custom',
-            'zipkin.sampler.custom' => 'my_service'
+            'zipkin.sampler.custom' => 'my_service',
         ]));
 
         $container = new Container($parameterBag);
