@@ -4,6 +4,7 @@ namespace ZipkinBundle\Samplers;
 
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpKernel\Kernel;
 use Zipkin\Sampler;
 
 final class RouteSampler implements Sampler
@@ -35,12 +36,17 @@ final class RouteSampler implements Sampler
      */
     public function isSampled(string $traceId): bool
     {
-        $masterRequest = $this->requestStack->getMasterRequest();
-        if ($masterRequest === null) {
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $mainRequest = $this->requestStack->getMainRequest();
+        } else {
+            $mainRequest = $this->requestStack->getMasterRequest();
+        }
+
+        if ($mainRequest === null) {
             return false;
         }
 
-        $route = $masterRequest->get('_route');
+        $route = $mainRequest->get('_route');
 
         if ([] !== $this->includedRoutes) {
             if (in_array($route, $this->includedRoutes)) {

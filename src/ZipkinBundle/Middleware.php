@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle;
 
+use Symfony\Component\HttpKernel\Kernel;
 use Zipkin\Tracing;
 use Zipkin\Tracer;
 use Zipkin\Tags;
@@ -73,7 +74,8 @@ final class Middleware
      */
     public function onKernelRequest(KernelEvent $event)
     {
-        if (!$event->isMasterRequest()) {
+        if ((Kernel::MAJOR_VERSION >= 6 && !$event->isMainRequest())
+            || (Kernel::MAJOR_VERSION < 6 && !$event->isMasterRequest())) {
             return;
         }
 
@@ -101,7 +103,8 @@ final class Middleware
      */
     public function onKernelController(KernelEvent $event)
     {
-        if (!$event->isMasterRequest()) {
+        if ((Kernel::MAJOR_VERSION >= 6 && !$event->isMainRequest())
+            || (Kernel::MAJOR_VERSION < 6 && !$event->isMasterRequest())) {
             return;
         }
 
@@ -116,7 +119,8 @@ final class Middleware
      */
     public function onKernelException(ExceptionEvent $event)
     {
-        if (!$event->isMasterRequest()) {
+        if ((Kernel::MAJOR_VERSION >= 6 && !$event->isMainRequest())
+            || (Kernel::MAJOR_VERSION < 6 && !$event->isMasterRequest())) {
             return;
         }
 

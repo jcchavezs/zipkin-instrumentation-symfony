@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  e2e:
+  e2e: &test-run
     parameters:
       php-version:
         type: string
@@ -39,6 +39,7 @@ jobs:
       - run:
           name: Run tests
           command: cd ./tests/E2E && make test
+  e2e-6: *test-run
 
 workflows:
   version: 2
@@ -54,3 +55,10 @@ workflows:
             exclude:
               - php-version: "7.1"
                 symfony-version: "5.0"
+      - e2e-6:
+          context:
+            - composer-auth # check https://app.circleci.com/settings/organization/github/jcchavezs/contexts
+          matrix:
+            parameters:
+              php-version: ["8.0", "8.1"]
+              symfony-version: ["6.0"]

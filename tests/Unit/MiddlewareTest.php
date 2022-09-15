@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle\Tests\Unit;
 
+use Symfony\Component\HttpKernel\Kernel;
 use Zipkin\TracingBuilder;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Reporters\InMemory as InMemoryReporter;
@@ -38,7 +39,11 @@ final class MiddlewareTest extends TestCase
         $middleware = new Middleware($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(false);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(false);
+        } else {
+            $event->isMasterRequest()->willReturn(false);
+        }
 
         $middleware->onKernelRequest($event->reveal());
 
@@ -62,7 +67,11 @@ final class MiddlewareTest extends TestCase
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());
@@ -93,7 +102,11 @@ final class MiddlewareTest extends TestCase
         $middleware = new Middleware($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(false);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(false);
+        } else {
+            $event->isMasterRequest()->willReturn(false);
+        }
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
@@ -123,7 +136,11 @@ final class MiddlewareTest extends TestCase
         $middleware = new Middleware($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
@@ -155,7 +172,11 @@ final class MiddlewareTest extends TestCase
         $middleware = new Middleware($tracing, $logger);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(false);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(false);
+        } else {
+            $event->isMasterRequest()->willReturn(false);
+        }
         $event->getRequest()->willReturn(new Request());
 
         $middleware->onKernelRequest($event->reveal());
@@ -201,7 +222,11 @@ final class MiddlewareTest extends TestCase
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());
@@ -248,7 +273,11 @@ final class MiddlewareTest extends TestCase
         $request = new Request();
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());
@@ -287,7 +316,11 @@ final class MiddlewareTest extends TestCase
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());
@@ -334,7 +367,11 @@ final class MiddlewareTest extends TestCase
         $request = new Request();
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $middleware->onKernelRequest($event->reveal());

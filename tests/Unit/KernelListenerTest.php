@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle\Tests\Unit;
 
+use Symfony\Component\HttpKernel\Kernel;
 use Zipkin\TracingBuilder;
 use Zipkin\Samplers\BinarySampler;
 use Zipkin\Reporters\InMemory;
@@ -59,7 +60,11 @@ final class KernelListenerTest extends TestCase
         $kernelListener = new KernelListener($httpServerTracing, RouteMapper::createAsNoop());
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(false);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(false);
+        } else {
+            $event->isMasterRequest()->willReturn(false);
+        }
 
         $kernelListener->onKernelRequest($event->reveal());
 
@@ -91,7 +96,11 @@ final class KernelListenerTest extends TestCase
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $kernelListener->onKernelRequest($event->reveal());
@@ -121,7 +130,11 @@ final class KernelListenerTest extends TestCase
         $kernelListener = new KernelListener($httpServerTracing);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(false);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(false);
+        } else {
+            $event->isMasterRequest()->willReturn(false);
+        }
         $event->getRequest()->willReturn(new Request());
 
         $kernelListener->onKernelRequest($event->reveal());
@@ -129,7 +142,7 @@ final class KernelListenerTest extends TestCase
         $exceptionEvent = new ExceptionEvent(
             $this->mockKernel(),
             new Request(),
-            HttpKernelInterface::SUB_REQUEST, // isMasterRequest will be false
+            HttpKernelInterface::SUB_REQUEST, // isMainRequest/isMasterRequest will be false
             new Exception()
         );
 
@@ -151,7 +164,11 @@ final class KernelListenerTest extends TestCase
 
         $eventRequest = new Request();
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($eventRequest);
 
         $kernelListener->onKernelRequest($event->reveal());
@@ -159,7 +176,7 @@ final class KernelListenerTest extends TestCase
         $exceptionEvent = new ExceptionEvent(
             $this->mockKernel(),
             $eventRequest,
-            HttpKernelInterface::MASTER_REQUEST, // isMasterRequest will be true
+            HttpKernelInterface::MASTER_REQUEST, // isMainRequest/isMasterRequest will be true
             new Exception(self::EXCEPTION_MESSAGE)
         );
 
@@ -184,7 +201,11 @@ final class KernelListenerTest extends TestCase
         $kernelListener = new KernelListener($httpServerTracing, RouteMapper::createAsNoop(), $logger);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(false);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(false);
+        } else {
+            $event->isMasterRequest()->willReturn(false);
+        }
         $event->getRequest()->willReturn(new Request());
 
         $kernelListener->onKernelRequest($event->reveal());
@@ -230,7 +251,11 @@ final class KernelListenerTest extends TestCase
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $kernelListener->onKernelRequest($event->reveal());
@@ -276,7 +301,11 @@ final class KernelListenerTest extends TestCase
         $request = new Request();
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $kernelListener->onKernelRequest($event->reveal());
@@ -317,7 +346,11 @@ final class KernelListenerTest extends TestCase
         ]);
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }
         $event->getRequest()->willReturn($request);
 
         $kernelListener->onKernelRequest($event->reveal());
@@ -363,8 +396,11 @@ final class KernelListenerTest extends TestCase
         $request = new Request();
 
         $event = $this->prophesize(KernelEvent::class);
-        $event->isMasterRequest()->willReturn(true);
-        $event->getRequest()->willReturn($request);
+        if (Kernel::MAJOR_VERSION >= 6) {
+            $event->isMainRequest()->willReturn(true);
+        } else {
+            $event->isMasterRequest()->willReturn(true);
+        }        $event->getRequest()->willReturn($request);
 
         $kernelListener->onKernelRequest($event->reveal());
 
