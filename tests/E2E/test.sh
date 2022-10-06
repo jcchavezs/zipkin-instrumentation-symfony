@@ -51,4 +51,6 @@ test "$(echo "$TRACES" | jq -c '.[0][0].tags.error')" = "null"
 # makes sure the server span has the right name
 test "$(echo "$TRACES" | jq -cr ".[0][0].name")" = "get /_health"
 
+echo "Done"
+
 exit $?

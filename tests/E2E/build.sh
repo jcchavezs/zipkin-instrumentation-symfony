@@ -2,47 +2,28 @@
 
 APP_FOLDER=test-app
 SYMFONY_VERSION=${1:-dev-master}
-LIBRARY_BRANCH=dev-${2:-master}
-SAMPLER=${3:-default}
+SAMPLER=${2:-default}
 DEFAULT_COMPOSER_RUNNER="$(which php) -d memory_limit=-1 $(which composer)"
 COMPOSER_RUNNER=${COMPOSER_RUNNER:-${DEFAULT_COMPOSER_RUNNER}}
 
 # Deletes old executions of the build
 rm -rf ${APP_FOLDER}
 
-${COMPOSER_RUNNER} create-project --prefer-dist --no-interaction symfony/website-skeleton:^${SYMFONY_VERSION} ${APP_FOLDER} || exit 1
+${COMPOSER_RUNNER} create-project --prefer-dist --no-interaction symfony/website-skeleton:^${SYMFONY_VERSION} ${APP_FOLDER}
 cd ${APP_FOLDER}
 
-# Includes zipkin-instrumentation-symfony to the composer.json of the app
 mv composer.json composer.json.dist
 cat composer.json.dist \
 | jq '. + {"minimum-stability": "dev"}' \
 | jq '. + {"prefer-stable": true}' \
-| jq '.scripts["sync"] = ["rsync -arv --exclude=.git --exclude=tests/E2E --exclude=composer.lock --exclude=vendor ../../../. ./.zipkin-instrumentation-symfony"]' \
-| jq '.scripts["pre-install-cmd"] = ["@sync"]' \
-| jq '.scripts["pre-update-cmd"] = ["@sync"]' \
-| jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "*"' \
-| jq '.repositories = [{"type": "path","url": "./.zipkin-instrumentation-symfony","options": {"symlink": true}}]' > composer.json
-
-echo "cat composer.json"
-cat composer.json
-
-rm composer.lock
-
-# we need to create the zipkin-instrumentation-symfony on beforehand
-mkdir .zipkin-instrumentation-symfony
-touch .zipkin-instrumentation-symfony/.gitignore
-
-echo "Installing web-server-bundle"
-# web-server-bundle:4.4 supports ^3.4, ^4.0 and ^5.0 (see https://github.com/symfony/web-server-bundle/blob/4.4/composer.json#L23)
-${COMPOSER_RUNNER} require symfony/web-server-bundle:"^${SYMFONY_VERSION}|^4.4" --dev
+| jq '.require["jcchavezs/zipkin-instrumentation-symfony"] = "*@dev"' \
+| jq '.repositories = [{"type": "path","url": "/home/runner/work/zipkin-instrumentation-symfony/zipkin-instrumentation-symfony"}]' > composer.json
+${COMPOSER_RUNNER} update --prefer-dist --no-interaction --no-ansi
 
 # includes configuration files to run the kernel listener in the app
+cp -r ./application/* ${APP_FOLDER}
 cp ../tracing.${SAMPLER}.yaml ./config/tracing.yaml
-cp ../HealthController.php ./src/Controller
-mkdir ./src/Sampler && cp ../CustomSampler.php ./src/Sampler
 mv ./config/services.yaml ./config/services.yaml.dist
 echo "imports: [{ resource: tracing.yaml }]" > ./config/services.yaml
 cat ./config/services.yaml.dist >> ./config/services.yaml
-
-./bin/console cache:warmup 
+php bin/console cache:warmup
