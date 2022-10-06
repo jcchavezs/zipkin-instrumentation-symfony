@@ -1,0 +1,128 @@
+name: "Continuous Integration"
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+
+jobs:
+  link:
+    name: Lint
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP, with composer and extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.0
+
+      - name: Install Composer dependencies
+        run: composer update --prefer-dist --no-interaction --no-ansi
+
+      - name: "Run coding style checking"
+        run: composer lint
+
+  phpunit:
+    name: Test PHP ${{ matrix.php-version }} & Symfony ${{ matrix.symfony-version }} ${{ matrix.composer-flags }}
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php-version: '8.0'
+            symfony-version: '6.0.*'
+            composer-flags: ''
+          - php-version: '8.1'
+            symfony-version: '6.0.*'
+            composer-flags: ''
+          - php-version: '8.1'
+            symfony-version: '6.1.*'
+            composer-flags: ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP, with composer and extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      # We need Flex to enfore Symfony version with `SYMFONY_REQUIRE` env var
+      - name: Install Symfony Flex & enable it
+        run: composer global require --no-progress --no-scripts --no-plugins symfony/flex && composer global config --no-plugins allow-plugins.symfony/flex true
+
+      - name: Install Composer dependencies
+        run: composer update --prefer-dist --no-interaction --no-ansi ${{ matrix.composer-flags }}
+
+      - name: "Run tests"
+        run: composer test
+
+
+  e2e:
+    name: E2E ${{ matrix.php-version }} & Symfony ${{ matrix.symfony-version }}
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php-version: 8.0
+            symfony-version: 6.0
+          - php-version: 8.1
+            symfony-version: 6.0
+          - php-version: 8.1
+            symfony-version: 6.1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install jq
+        run: sudo apt install jq
+
+      - name: Setup PHP, with composer and extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Symfony Flex & enable it
+        run: composer global require --no-progress --no-scripts --no-plugins symfony/flex && composer global config --no-plugins allow-plugins.symfony/flex true
+
+      - name: Install Composer dependencies
+        run: composer update --prefer-dist --no-interaction --no-ansi
+
+      - name: Install Zipkin
+        run: curl -sSL https://zipkin.io/quickstart.sh | bash -s
+
+      - name: Run Zipkin server
+        run: java -jar zipkin.jar &
+
+      - name: Build app
+        working-directory: ./tests/E2E/
+        run: make build
+
+      - name: Run app
+        working-directory: ./tests/E2E/
+        run: make run-app
+
+      - name: Tests
+        working-directory: ./tests/E2E/
+        run: make test

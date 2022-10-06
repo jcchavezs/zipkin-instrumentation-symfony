@@ -7,7 +7,7 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 final class ZipkinBundle extends Bundle
 {
-    public function getContainerExtensionClass()
+    public function getContainerExtensionClass(): string
     {
         return ZipkinExtension::class;
     }

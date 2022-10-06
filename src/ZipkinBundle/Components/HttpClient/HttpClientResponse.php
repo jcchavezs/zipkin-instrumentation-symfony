@@ -122,7 +122,7 @@ final class HttpClientResponse implements ResponseInterface
     /**
      * {@inheritdoc}
      */
-    public function getInfo(string $type = null)
+    public function getInfo(string $type = null): mixed
     {
         if ($type === null) {
             return $this->delegate->getInfo();

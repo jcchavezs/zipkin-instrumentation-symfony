@@ -36,11 +36,7 @@ final class PathSampler implements Sampler
      */
     public function isSampled(string $traceId): bool
     {
-        if (Kernel::MAJOR_VERSION >= 6) {
-            $mainRequest = $this->requestStack->getMainRequest();
-        } else {
-            $mainRequest = $this->requestStack->getMasterRequest();
-        }
+        $mainRequest = $this->requestStack->getMainRequest();
 
         if ($mainRequest === null) {
             return false;

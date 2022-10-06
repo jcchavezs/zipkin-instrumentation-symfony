@@ -74,8 +74,7 @@ final class Middleware
      */
     public function onKernelRequest(KernelEvent $event)
     {
-        if ((Kernel::MAJOR_VERSION >= 6 && !$event->isMainRequest())
-            || (Kernel::MAJOR_VERSION < 6 && !$event->isMasterRequest())) {
+        if (!$event->isMainRequest()) {
             return;
         }
 
@@ -103,8 +102,7 @@ final class Middleware
      */
     public function onKernelController(KernelEvent $event)
     {
-        if ((Kernel::MAJOR_VERSION >= 6 && !$event->isMainRequest())
-            || (Kernel::MAJOR_VERSION < 6 && !$event->isMasterRequest())) {
+        if (!$event->isMainRequest()) {
             return;
         }
 
@@ -119,8 +117,7 @@ final class Middleware
      */
     public function onKernelException(ExceptionEvent $event)
     {
-        if ((Kernel::MAJOR_VERSION >= 6 && !$event->isMainRequest())
-            || (Kernel::MAJOR_VERSION < 6 && !$event->isMasterRequest())) {
+        if (!$event->isMainRequest()) {
             return;
         }
 

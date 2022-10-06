@@ -86,8 +86,7 @@ final class KernelListener
      */
     public function onKernelRequest(KernelEvent $event)
     {
-        if ((Kernel::MAJOR_VERSION >= 6 && !$event->isMainRequest())
-            || (Kernel::MAJOR_VERSION < 6 && !$event->isMasterRequest())) {
+        if (!$event->isMainRequest()) {
             return;
         }
 

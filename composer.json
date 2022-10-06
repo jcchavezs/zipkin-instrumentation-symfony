@@ -3,17 +3,18 @@
     "description": "A Zipkin integration for Symfony applications",
     "type": "symfony-bundle",
     "require": {
-        "symfony/config": "^4.4 || ^5.0 || ^6.0",
-        "symfony/http-kernel": "^4.4 || ^5.0 || ^6.0",
-        "symfony/routing": "^4.4 || ^5.0 || ^6.0",
-        "symfony/dependency-injection": "^4.4 || ^5.0 || ^6.0",
-        "openzipkin/zipkin": "^2.0.2 || ^3.0"
+        "php": ">=7.4",
+        "symfony/config": "^6.0",
+        "symfony/http-kernel": "^6.0",
+        "symfony/routing": "^6.0",
+        "symfony/dependency-injection": "^6.0",
+        "openzipkin/zipkin": "^3.0"
     },
     "require-dev": {
         "jcchavezs/httptest": "~0.2",
-        "phpunit/phpunit": "~7||~8",
+        "phpunit/phpunit": "~8",
         "squizlabs/php_codesniffer": "^3.0@dev",
-        "symfony/http-client": "^4.4||^5.0",
+        "symfony/http-client": "^6.0",
         "phpspec/prophecy": "^1.15"
     },
     "license": "MIT",
