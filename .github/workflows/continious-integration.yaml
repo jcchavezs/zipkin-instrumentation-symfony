@@ -50,6 +50,9 @@ jobs:
             symfony-version: '6.1.*'
             composer-flags: ''
 
+    env:
+      SYMFONY_REQUIRE: ${{ matrix.symfony-version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
