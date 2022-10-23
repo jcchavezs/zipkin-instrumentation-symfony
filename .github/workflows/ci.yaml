@@ -1,4 +1,4 @@
-name: "Continuous Integration"
+name: "CI"
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
       - "LICENSE"
 
 jobs:
-  link:
+  lint:
     name: Lint
     runs-on: "ubuntu-latest"
 
@@ -32,7 +32,7 @@ jobs:
       - name: "Run coding style checking"
         run: composer lint
 
-  phpunit:
+  test:
     name: Test PHP ${{ matrix.php-version }} & Symfony ${{ matrix.symfony-version }} ${{ matrix.composer-flags }}
     runs-on: "ubuntu-latest"
 
@@ -40,15 +40,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - php-version: '8.0'
-            symfony-version: '6.0.*'
-            composer-flags: ''
-          - php-version: '8.1'
-            symfony-version: '6.0.*'
-            composer-flags: ''
-          - php-version: '8.1'
-            symfony-version: '6.1.*'
-            composer-flags: ''
+          - php-version: "8.0"
+            symfony-version: "6.0.*"
+            composer-flags: ""
+          - php-version: "8.1"
+            symfony-version: "6.0.*"
+            composer-flags: ""
+          - php-version: "8.1"
+            symfony-version: "6.1.*"
+            composer-flags: ""
 
     env:
       SYMFONY_REQUIRE: ${{ matrix.symfony-version }}
@@ -72,7 +72,6 @@ jobs:
       - name: "Run tests"
         run: composer test
 
-
   e2e:
     name: E2E ${{ matrix.php-version }} & Symfony ${{ matrix.symfony-version }}
     runs-on: "ubuntu-latest"
@@ -87,6 +86,9 @@ jobs:
             symfony-version: 6.0
           - php-version: 8.1
             symfony-version: 6.1
+
+    env:
+      SYMFONY_REQUIRE: ${{ matrix.symfony-version }}
 
     steps:
       - name: Checkout

@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony.svg?branch=master)](https://travis-ci.org/jcchavezs/zipkin-instrumentation-symfony)
 [![CircleCI](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master.svg?style=svg)](https://circleci.com/gh/jcchavezs/zipkin-instrumentation-symfony/tree/master)
 [![Latest Stable Version](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/v/stable)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
-[![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%207.1-8892BF.svg)](https://php.net/)
+[![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%208.0-8892BF.svg)](https://php.net/)
 [![Total Downloads](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/downloads)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 [![License](https://poser.pugx.org/jcchavezs/zipkin-instrumentation-symfony/license)](https://packagist.org/packages/jcchavezs/zipkin-instrumentation-symfony)
 
@@ -18,7 +18,7 @@ composer require jcchavezs/zipkin-instrumentation-symfony
 ## Getting started
 
 This Symfony bundle provides a kernel listener that can be used to trace
-HTTP requests. In order to use it, it is important that you declare 
+HTTP requests. In order to use it, it is important that you declare
 the listener by adding this to your `app/config/services.yml` or any other
 [dependency injection](https://symfony.com/doc/current/components/dependency_injection.html) declaration.
 
@@ -37,7 +37,7 @@ services:
       - { name: kernel.event_listener, event: kernel.terminate }
 ```
 
-`@zipkin.default_tracing` is a `Zipkin\DefaultTracing` instance which is being 
+`@zipkin.default_tracing` is a `Zipkin\DefaultTracing` instance which is being
 built based on the configuration (add this to `app/config/config.yml`):
 
 ```yaml
@@ -95,7 +95,7 @@ This sampler uses the `Symfony\Component\HttpFoundation\RequestStack` meaning th
 
 ### By percentage
 
-This one is for those cases where you want to sample only a percentage of the 
+This one is for those cases where you want to sample only a percentage of the
 requests (a.k.a "Sampling rate")
 
 ```yaml
@@ -160,7 +160,7 @@ services:
 ## Custom Tracing
 
 Although this bundle provides a tracer based on the configuration parameters
-under the `zipkin` node, you can inject your own `tracing component` to the 
+under the `zipkin` node, you can inject your own `tracing component` to the
 kernel listener as long as it implements the `Zipkin\Tracing` interface:
 
 ```yaml
@@ -227,7 +227,6 @@ final class HttpServerParser extends DefaultHttpServerParser {
     }
 }
 ```
-
 
 ## HTTP Client
 
