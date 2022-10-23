@@ -2,48 +2,33 @@
 
 namespace ZipkinBundle\Components\HttpClient;
 
-use Zipkin\Tracer;
-use Zipkin\SpanCustomizerShield;
-use Zipkin\SpanCustomizer;
-use Zipkin\Span;
-use Zipkin\Propagation\TraceContext;
-use Zipkin\Propagation\Map;
-use Zipkin\Instrumentation\Http\Client\Parser;
-use Zipkin\Instrumentation\Http\Client\HttpClientTracing;
-use TypeError;
-use Throwable;
-use Symfony\Contracts\HttpClient\ResponseStreamInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Component\HttpClient\Response\ResponseStream;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
+use Symfony\Contracts\HttpClient\ResponseStreamInterface;
+use Zipkin\Instrumentation\Http\Client\HttpClientParser;
+use Zipkin\Instrumentation\Http\Client\HttpClientTracing;
+use Zipkin\Instrumentation\Http\Client\Parser;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Zipkin\Propagation\Map;
+use Zipkin\Propagation\TraceContext;
+use Zipkin\Span;
+use Zipkin\SpanCustomizer;
+use Zipkin\SpanCustomizerShield;
+use Zipkin\Tracer;
 
 final class HttpClient implements HttpClientInterface
 {
-    /**
-     * @var HttpClientInterface
-     */
-    private $delegate;
-
-    /**
-     * @var Tracer
-     */
-    private $tracer;
-
+    private HttpClientInterface $delegate;
+    private Tracer $tracer;
     /**
      * @var callable
      */
     private $injector;
+    private HttpClientParser $httpParser;
 
-    /**
-     * @var Parser
-     */
-    private $httpParser;
-
-    public function __construct(
-        HttpClientInterface $client,
-        HttpClientTracing $httpTracing
-    ) {
+    public function __construct(HttpClientInterface $client, HttpClientTracing $httpTracing)
+    {
         $this->delegate = $client;
         $this->tracer = $httpTracing->getTracing()->getTracer();
         $this->injector = $httpTracing->getTracing()->getPropagation()->getInjector(new Map());
@@ -173,5 +158,13 @@ final class HttpClient implements HttpClientInterface
         }
 
         return new ResponseStream(HttpClientResponse::stream($this->delegate, $responses, $timeout));
+    }
+
+    /**
+     * We don't manage options in the HttpClient so just skip it
+     */
+    public function withOptions(array $options): static
+    {
+        return clone $this;
     }
 }

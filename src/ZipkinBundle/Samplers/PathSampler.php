@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle\Samplers;
 
+use Symfony\Component\HttpKernel\Kernel;
 use Zipkin\Sampler;
 use Symfony\Component\HttpFoundation\RequestStack;
 use InvalidArgumentException;
@@ -35,12 +36,13 @@ final class PathSampler implements Sampler
      */
     public function isSampled(string $traceId): bool
     {
-        $masterRequest = $this->requestStack->getMasterRequest();
-        if ($masterRequest === null) {
+        $mainRequest = $this->requestStack->getMainRequest();
+
+        if ($mainRequest === null) {
             return false;
         }
 
-        $requestPath = $masterRequest->getRequestUri();
+        $requestPath = $mainRequest->getRequestUri();
 
         if ([] !== $this->includedPaths) {
             foreach ($this->includedPaths as $pathPattern) {

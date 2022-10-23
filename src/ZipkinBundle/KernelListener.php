@@ -2,6 +2,7 @@
 
 namespace ZipkinBundle;
 
+use Symfony\Component\HttpKernel\Kernel;
 use function Zipkin\Timestamp\now;
 use Zipkin\Tracer;
 use Zipkin\SpanCustomizerShield;
@@ -85,7 +86,7 @@ final class KernelListener
      */
     public function onKernelRequest(KernelEvent $event)
     {
-        if (!$event->isMasterRequest()) {
+        if (!$event->isMainRequest()) {
             return;
         }
 
